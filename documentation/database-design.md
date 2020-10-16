@@ -23,3 +23,14 @@ Columns:
 
   * team_id
   * short_name
+
+team_cw table
+---------------
+
+This is a table that will let us look up a team_id
+
+Columns:
+
+  * team_text
+  * team_id
+
