@@ -1,8 +1,8 @@
-import functools
 from enum import Enum
 from typing import Any, Dict, List, Optional, Tuple
 
 import MySQLdb
+import functools
 import pandas as pd
 
 from sql_config import SQL_CONFIG

@@ -1,2 +1,4 @@
 # Contains password
 sql_config.py
+test_data/*
+logs/*
