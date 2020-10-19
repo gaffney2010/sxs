@@ -1,3 +1,6 @@
+import logging  # Must be first
+logging.basicConfig(format="%(asctime)s  %(levelname)s:\t%(module)s::%(funcName)s:%(lineno)d\t-\t%(message)s", level=logging.DEBUG)
+
 from bs4 import BeautifulSoup
 import dateparser
 
@@ -13,8 +16,7 @@ raw_html_cacher = TimedReadWriteCacher(directory=RAW_HTML_DIR, age_days=1)
 def pull_week(season: int, week: int) -> None:
     with WebDriver() as driver:
         nfl_page_text = read_url_to_string(NFL_PAGE.format(season, week), driver,
-                                           cacher=raw_html_cacher,
-                                           error_logger=print_error)
+                                           cacher=raw_html_cacher)
     nfl_page = BeautifulSoup(nfl_page_text, features="html.parser")
 
     main_section = nfl_page.find("div", {"data-require": "modules/scheduleByWeek"})
@@ -58,7 +60,8 @@ def pull_week(season: int, week: int) -> None:
 
             # TODO: Implement mutual_location.
 
-            print(new_game)
+            logging.debug(new_game)
             add_row_to_table("game", new_game)
 
-pull_week(2020, 6)
+logging.debug("HELLO")
+# pull_week(2020, 6)

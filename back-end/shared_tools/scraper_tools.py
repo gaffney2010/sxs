@@ -42,8 +42,7 @@ class WebDriver(object):
 
 
 def read_url_to_string(url: str, web_driver: WebDriver,
-                       cacher: Optional[Cacher],
-                       error_logger: Optional[ErrorLogger] = None) -> str:
+                       cacher: Optional[Cacher]) -> str:
     """ Read from a url and print to a string, after fully buffering.
 
     If errors after three tries, then will return an empty string.
@@ -63,7 +62,7 @@ def read_url_to_string(url: str, web_driver: WebDriver,
         cacher = Cacher()
 
     @memoize(url, cacher)
-    @swallow_error("", error_logger=error_logger)
+    @swallow_error("")
     @retrying.retry(wait_random_min=200, wait_random_max=400,
                     stop_max_attempt_number=3)
     def read_url_to_string_helper(help_url):

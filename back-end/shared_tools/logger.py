@@ -1,5 +1,4 @@
-import os.path
-from datetime import datetime
+import logging
 import traceback
 from typing import Callable
 
@@ -9,53 +8,18 @@ LOG_DIR = "/home/gaffney/stacks-by-stacks/back-end/logs"
 ErrorLogger = Callable
 
 
-def _error_iterator(*args):
-    """ Adds decorators to a passed stream of error messages."""
-    now = datetime.now()
-    yield "{}".format(now.strftime("%Y-%m-%d %H:%M"))
-    for arg in args:
-        yield str(arg)
-    yield "==========="
-
-
-def print_error(*args):
-    """ Same as log_error, but only prints to the screen."""
-    for msg in _error_iterator(*args):
-        print(msg)
-
-
-def log_error(*args):
-    """ Saves the arguments to a daily log with the time, and some other decorators."""
-    print_error(*args)
-    # Change the file name every day.
-    log_path = os.path.join(LOG_DIR,
-                            "{}".format(datetime.now().strftime("%Y%m%d")))
-    with open(log_path, "a") as log_file:
-        for msg in _error_iterator(*args):
-            print(msg)
-            log_file.write(msg)
-            log_file.write("\n")
-
-
-def swallow_error(default_return: Any,
-                  error_logger: Optional[ErrorLogger] = None):
+def swallow_error(default_return: Any):
     """ A decorator which passes through an error with proper logging."""
-    if error_logger is None:
-        # Don't log.
-        error_logger = lambda *args: None
-
     def real_swallow_error(func):
         def func_with_swallow(*args, **kwargs):
             try:
                 return func(*args, **kwargs)
-            except BaseException as e:
-
-                error_logger(
-                    "SWALLOWING ERROR!",
-                    "function called: {}".format(func),
-                    args, kwargs)
-
-                error_logger("Exception:", traceback.format_exc(), str(e))
+            except Exception as e:
+                logging.error("SWALLOWING ERROR!")
+                logging.error("function called: {}".format(func))
+                logging.error(args)
+                logging.error(kwargs)
+                logging.error("Exception:", traceback.format_exc(), str(e))
 
                 return default_return
 

@@ -1,4 +1,5 @@
 import functools
+import logging
 from enum import Enum
 from typing import Any, Dict, List, Optional, Tuple
 
@@ -33,7 +34,7 @@ def _sql_connection():
                 stop_max_attempt_number=3)
 def _sql_query(query: str) -> List[Tuple]:
     """Low-level SQL query."""
-    print(f"Query: {query}")
+    logging.info(f"Query: {query}")
 
     sxsql = _sql_connection()
     cur = sxsql.cursor()
@@ -45,7 +46,7 @@ def _sql_query(query: str) -> List[Tuple]:
                 stop_max_attempt_number=3)
 def _sql_execute(command: str) -> None:
     """Low-level SQL execute."""
-    print(f"Execute: {command}")
+    logging.info(f"Execute: {command}")
 
     sxsql = _sql_connection()
     sxsql.cursor().execute(command)
@@ -82,7 +83,7 @@ def add_row_to_table(table_name: str, values: Dict[str, Any]) -> None:
     # Update cache
     if table_name in table_cache():
         table_cache()[table_name] = table_cache()[table_name].append(
-                values, ignore_index=True)
+            values, ignore_index=True)
 
     # Start building the SQL instruction
     values_strings = list()
@@ -206,8 +207,8 @@ def get_team_id(
     raise Exception(f"Unknown text representing team: {team_text}.")
 
 
-print(_column_names("team_cw"))
-# print(get_team_id("green bay"))
-# print(get_team_id("packers"))
-# print(get_team_id("green bay packers"))
-# print(get_team_id("gb"))
+logging.debug(_column_names("team_cw"))
+logging.debug(get_team_id("green bay"))
+logging.debug(get_team_id("packers"))
+logging.debug(get_team_id("green bay packers"))
+logging.debug(get_team_id("gb"))
