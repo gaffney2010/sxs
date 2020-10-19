@@ -1,5 +1,6 @@
 import os.path
 from datetime import datetime
+import traceback
 from typing import Callable
 
 from shared_tools.cache import *
@@ -50,9 +51,11 @@ def swallow_error(default_return: Any,
             except BaseException as e:
 
                 error_logger(
-                    "SWALLOWING ERROR!", str(e),
+                    "SWALLOWING ERROR!",
                     "function called: {}".format(func),
                     args, kwargs)
+
+                error_logger("Exception:", traceback.format_exc(), str(e))
 
                 return default_return
 

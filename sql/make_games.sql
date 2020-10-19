@@ -1,7 +1,7 @@
 drop table u995391212_stackql.game;
 create table if not exists u995391212_stackql.game (
-	game_id int not null,
-    date int,
+    game_date int,
+    season int,
     week int,
     play_status enum('UPCOMING', 'LIVE', 'PAST'),
     home_team_id int,
@@ -9,8 +9,7 @@ create table if not exists u995391212_stackql.game (
     mutual_location bool,
     home_score int,
     away_score int,
-    ot int,
-    primary key (game_id)
+    primary key (game_date, home_team_id)
 );
 
 -- insert into u995391212_stackql.game

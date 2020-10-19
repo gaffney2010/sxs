@@ -8,7 +8,7 @@ create table if not exists u995391212_stackql.team (
 insert into u995391212_stackql.team
 values 	(1, "Packers"),
 		(2, "Bears"),
-        (3, "Packers"),
+        (3, "Lions"),
         (4, "Vikings"),
         (5, "Cowboys"),
         (6, "Giants"),

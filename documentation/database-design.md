@@ -7,16 +7,17 @@ Home and away team ID will be foreign keys.
 
 Columns:
 
-  * game_id
-  * date - YYYYMMDD
+  * game_date - YYYYMMDD (+)
+  * season - YYYY (year of start of season)
   * week
   * play_status (enum) - UPCOMING, LIVE, PAST
-  * home_team_id
+  * home_team_id (+)
   * away_team_id
   * mutual_location (bool)
   * home_score
   * away_score
-  * ot (int)
+
+(+) Part of the primary key
 
 team table
 ----------

@@ -4,9 +4,21 @@ import time
 from typing import Any, Optional
 
 
-def _esc_key(key: str) -> str:
+def _transform_key(key: str, directory: str) -> str:
     """Make it safe to save"""
-    return key.replace("/", "")
+    return os.path.join(directory, key.replace("/", ""))
+
+
+def _write_key_value(key: str, value: Any) -> None:
+    """Write value to key."""
+    with open(key, "wb") as f:
+        return pickle.dump(value, f)
+
+
+def _read_key(key: str) -> Any:
+    """Reads a file.  Will raise if file doesn't exist."""
+    with open(key, "rb") as f:
+        return pickle.load(f)
 
 
 class Cacher(object):
@@ -21,12 +33,6 @@ class Cacher(object):
         return None
 
 
-def _write_key_value(directory: str, key: str, value: Any) -> None:
-    """Write value to directory/key."""
-    with open(os.path.join(directory, _esc_key(key)), "wb") as f:
-        return pickle.dump(value, f)
-
-
 class WriteCacher(Cacher):
     """Only writes to relative directory, but always write."""
 
@@ -35,13 +41,7 @@ class WriteCacher(Cacher):
         super().__init__()
 
     def write(self, key: str, value: Any) -> None:
-        _write_key_value(self.directory, key, value)
-
-
-def _read_key(directory: str, key: str) -> Any:
-    """Reads a file.  Will raise if file doesn't exist."""
-    with open(os.path.join(directory, _esc_key(key)), "rb") as f:
-        return pickle.load(f)
+        _write_key_value(_transform_key(key, self.directory), value)
 
 
 class ReadWriteCacher(Cacher):
@@ -54,7 +54,7 @@ class ReadWriteCacher(Cacher):
 
     def _read_impl(self, key: str) -> Optional[str]:
         try:
-            return _read_key(self.directory, key)
+            return _read_key(_transform_key(key, self.directory))
         except:
             return None
 
@@ -68,7 +68,7 @@ class ReadWriteCacher(Cacher):
     def write(self, key: str, value: Any) -> None:
         """If the key has been cache missed, then write."""
         if key in self.should_write:
-            _write_key_value(self.directory, key, value)
+            _write_key_value(_transform_key(key, self.directory), value)
             self.should_write.remove(key)
 
 
@@ -81,11 +81,12 @@ class TimedReadWriteCacher(ReadWriteCacher):
 
     def _read_impl(self, key: str) -> Optional[str]:
         """Only try to read locally if the file is newer than age_days old."""
-        if os.path.exists(os.path.join(self.directory, key)):
-            mod_time = os.path.getmtime(key)
+        tkey = _transform_key(key, self.directory)
+        if os.path.exists(tkey):
+            mod_time = os.path.getmtime(tkey)
             current_time = time.time()
             if current_time - mod_time < self.age_days * 60 * 60 * 24:
-                return _read_key(self.directory, key)
+                return _read_key(tkey)
 
 
 def memoize(key: str, cacher: Cacher):

@@ -1,9 +1,10 @@
+import functools
 from enum import Enum
 from typing import Any, Dict, List, Optional, Tuple
 
 import MySQLdb
-import functools
 import pandas as pd
+import retrying
 
 from sql_config import SQL_CONFIG
 
@@ -28,16 +29,20 @@ def _sql_connection():
     return MySQLdb.connect(**SQL_CONFIG)
 
 
+@retrying.retry(wait_random_min=0, wait_random_max=300,
+                stop_max_attempt_number=3)
 def _sql_query(query: str) -> List[Tuple]:
     """Low-level SQL query."""
     print(f"Query: {query}")
 
     sxsql = _sql_connection()
-    sxsql.query(query)
-    column_name_results = sxsql.use_result()
-    return column_name_results.fetch_row(maxrows=INF)
+    cur = sxsql.cursor()
+    cur.execute(query)
+    return cur.fetchall()
 
 
+@retrying.retry(wait_random_min=0, wait_random_max=100,
+                stop_max_attempt_number=3)
 def _sql_execute(command: str) -> None:
     """Low-level SQL execute."""
     print(f"Execute: {command}")
@@ -63,11 +68,21 @@ def _convert_field_to_sql(value: Any) -> str:
     return str(value)
 
 
-def _add_row_to_table(table_name: str, values: Dict[str, Any]) -> None:
-    """Add the given values to the table."""
+def add_row_to_table(table_name: str, values: Dict[str, Any]) -> None:
+    """Add the given values to the table.
+
+    Technically executes a replace, which will delete old values if the primary
+    key already exists for the row.
+
+    Args:
+        table_name: The name of the table in the default DB.
+        values: A dict where the keys are the row names.  Will ignore any
+            invalid keys.
+    """
     # Update cache
-    table_cache()[table_name] = table_cache()[table_name].append(values,
-                                                                 ignore_index=True)
+    if table_name in table_cache():
+        table_cache()[table_name] = table_cache()[table_name].append(
+                values, ignore_index=True)
 
     # Start building the SQL instruction
     values_strings = list()
@@ -80,7 +95,7 @@ def _add_row_to_table(table_name: str, values: Dict[str, Any]) -> None:
     db = SQL_CONFIG["db"]
 
     # Execute SQL instruction
-    _sql_execute(f"insert into {db}.{table_name} values ({value_clause});")
+    _sql_execute(f"replace into {db}.{table_name} values ({value_clause});")
 
 
 def pull_everything_from_table(table_name: str,
@@ -99,7 +114,11 @@ def pull_everything_from_table(table_name: str,
             {k: v for k, v in zip(_column_names(table_name), result)})
 
     # Convert to a pandas dataframe
-    result = pd.DataFrame(data)
+    if len(data) == 0:
+        # Handle the empty case special.
+        result = pd.DataFrame(columns=_column_names(table_name))
+    else:
+        result = pd.DataFrame(data)
 
     table_cache()[table_name] = result
     return result
@@ -160,6 +179,8 @@ def get_team_id(
     Raises:
         Exception: If the text is not known or prompt is not a team ID
     """
+    team_text = _clean_text(team_text)
+
     if cache_strategy == CacheStrategy.FROM_CACHE:
         result = _get_team_id(team_text, True)
     if cache_strategy == CacheStrategy.FROM_TABLE:
@@ -177,15 +198,16 @@ def get_team_id(
             f"Unknown text representing team: {team_text}.  Enter team ID or 0 to fail:")
         team_id = int(team_id)
         if 1 <= team_id <= NFL_TEAMS:
-            _add_row_to_table(TEAM_CW_TABLE, {TEAM_TEXT_COLUMN: team_text,
-                                              TEAM_ID_COLUMN: team_id})
+            add_row_to_table(TEAM_CW_TABLE, {TEAM_TEXT_COLUMN: team_text,
+                                             TEAM_ID_COLUMN: team_id})
             return team_id
         raise Exception(f"Unknown team ID: {team_id}.")
 
     raise Exception(f"Unknown text representing team: {team_text}.")
 
 
-print(get_team_id("green bay"))
-print(get_team_id("packers"))
-print(get_team_id("green bay packers"))
-print(get_team_id("gb"))
+print(_column_names("team_cw"))
+# print(get_team_id("green bay"))
+# print(get_team_id("packers"))
+# print(get_team_id("green bay packers"))
+# print(get_team_id("gb"))
