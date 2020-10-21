@@ -1,17 +1,17 @@
 import functools
 import logging
 from enum import Enum
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Callable, Dict, List, Optional, Tuple
 
 import MySQLdb
 import pandas as pd
-import retrying
 
 from sql_config import SQL_CONFIG
 
 INF = 10000  # Must exceed the number of rows for every table.
 NO_TABLES = 10  # For caching
 NFL_TEAMS = 32
+NO_RETRY = 3
 
 TEAM_CW_TABLE = "team_cw"
 TEAM_TEXT_COLUMN = "team_text"
@@ -24,33 +24,53 @@ def table_cache() -> Dict[str, pd.DataFrame]:
     return dict()
 
 
-@functools.lru_cache(1)
-def _sql_connection():
-    """Connect to SQL with SQL_CONFIG settings."""
-    return MySQLdb.connect(**SQL_CONFIG)
+class SqlConn(object):
+    _instance = None
 
+    def __new__(cls, *args, **kwargs):
+        if not cls._instance:
+            cls._instance = super(SqlConn, cls).__new__(
+                cls, *args, **kwargs)
 
-@retrying.retry(wait_random_min=0, wait_random_max=300,
-                stop_max_attempt_number=3)
-def _sql_query(query: str) -> List[Tuple]:
-    """Low-level SQL query."""
-    logging.info(f"Query: {query}")
+            # Connect to SQL with SQL_CONFIG settings.
+            logging.debug("Initializing new SqlConn.")
+            cls._instance._conn = MySQLdb.connect(**SQL_CONFIG)
 
-    sxsql = _sql_connection()
-    cur = sxsql.cursor()
-    cur.execute(query)
-    return cur.fetchall()
+        return cls._instance
 
+    def _retry_with_reopen(self, f: Callable):
+        """Retry, opening _conn between."""
+        recent_exception = None
+        for _ in range(NO_RETRY):
+            try:
+                return f()
+            except Exception as e:
+                recent_exception = e
+                logging.debug("Initializing new SqlConn.")
+                self._conn = MySQLdb.connect(**SQL_CONFIG)
 
-@retrying.retry(wait_random_min=0, wait_random_max=100,
-                stop_max_attempt_number=3)
-def _sql_execute(command: str) -> None:
-    """Low-level SQL execute."""
-    logging.info(f"Execute: {command}")
+        raise(recent_exception)
 
-    sxsql = _sql_connection()
-    sxsql.cursor().execute(command)
-    sxsql.commit()
+    def sql_query(self, query: str) -> List[Tuple]:
+        """Low-level SQL query."""
+        logging.info(f"Query: {query}")
+
+        def query_instructions():
+            cur = self._conn.cursor()
+            cur.execute(query)
+            return cur.fetchall()
+
+        return self._retry_with_reopen(query_instructions)
+
+    def sql_execute(self, command: str) -> None:
+        """Low-level SQL execute."""
+        logging.info(f"Execute: {command}")
+
+        def execute_instructions():
+            self._conn.cursor().execute(command)
+            self._conn.commit()
+
+        return self._retry_with_reopen(execute_instructions)
 
 
 @functools.lru_cache(NO_TABLES)
@@ -58,7 +78,7 @@ def _column_names(table_name: str) -> List[str]:
     """Get the column names for a table as they are in SQL."""
     # Set up server
     column_query = f"select column_name from information_schema.columns where table_name='{table_name}';"
-    return [x[0] for x in _sql_query(column_query)]
+    return [x[0] for x in SqlConn().sql_query(column_query)]
 
 
 def _convert_field_to_sql(value: Any) -> str:
@@ -96,7 +116,7 @@ def add_row_to_table(table_name: str, values: Dict[str, Any]) -> None:
     db = SQL_CONFIG["db"]
 
     # Execute SQL instruction
-    _sql_execute(f"replace into {db}.{table_name} values ({value_clause});")
+    SqlConn().sql_execute(f"replace into {db}.{table_name} values ({value_clause});")
 
 
 def pull_everything_from_table(table_name: str,
@@ -110,7 +130,7 @@ def pull_everything_from_table(table_name: str,
 
     # Get data
     data = list()
-    for result in _sql_query(f"select * from {table_name};"):
+    for result in SqlConn().sql_query(f"select * from {table_name};"):
         data.append(
             {k: v for k, v in zip(_column_names(table_name), result)})
 

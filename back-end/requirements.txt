@@ -1,0 +1,8 @@
+attrs
+bs4
+dateparser
+mysqlclient # brew install mysql??
+numpy
+pandas
+retrying
+selenium
