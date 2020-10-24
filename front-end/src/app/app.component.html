@@ -1,6 +1,5 @@
 <img src="stacks.png">
 
-<div *ngFor="let game of games">
-  Game:<br>
-  <app-game [game_data]="game"></app-game>
+<div *ngFor="let date of dates">
+  <app-game-date [game_date]="date.game_date"></app-game-date>
 </div>

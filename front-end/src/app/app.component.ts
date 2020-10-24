@@ -7,10 +7,13 @@ import { Component, OnInit } from '@angular/core';
 })
 export class AppComponent implements OnInit {
   title = 'front-end';
-  games;
+  dates;
 
   async ngOnInit() {
-  	let response = await fetch('https://stacksbystacks.com/Sql.php');
-  	this.games = await response.json();
+    var url = new URL('https://stacksbystacks.com/Sql.php');
+    url.searchParams.append('columns', 'game_date');
+    url.searchParams.append('table', 'game');
+  	let response = await fetch(url.href);
+  	this.dates = await response.json();
   }
 }

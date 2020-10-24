@@ -5,16 +5,36 @@ $method = $_SERVER['REQUEST_METHOD'];
 
 // connect to the mysql database
 $configs = include('SqlConfig.php');
-$link = mysqli_connect($configs['host'], $configs['username'], $configs['password'], $configs['database']);
-mysqli_set_charset($link, 'utf8');
+$mysqli = new mysqli($configs['host'], $configs['username'], $configs['password'], $configs['database']);
+
+function safeGet($mysqli, $param) {
+  if (isset($_GET[$param])) {
+    return $mysqli->real_escape_string($_GET[$param]);
+  }
+  return "";
+}
 
 // Only works for game for now.
-$table = 'game';
+$columns = safeGet($mysqli, 'columns');
+$table = safeGet($mysqli, 'table');
+$where_clause = safeGet($mysqli, 'where');
+$order_clause = safeGet($mysqli, 'order');
+
+if (empty($columns) || empty($table)) {
+  die("columns and table must be passed.");
+}
+if (empty($where_clause)) {
+  $where_clause = "true";
+}
+if (empty($order_clause)) {
+  $order_clause = "1";
+}
 
 // create SQL based on HTTP method
 switch ($method) {
   case 'GET':
-    $sql = "select * from `$table`;"; break;
+    $result = $mysqli->query("select distinct $columns from $table where $where_clause order by $order_clause;") or die($mysqli->error);
+    break;
   // These others aren't supported yet.
   case 'PUT':
     die("Request method is not supported."); break;
@@ -24,23 +44,11 @@ switch ($method) {
     die("Request method is not supported."); break;
 }
 
-// excecute SQL statement
-$result = mysqli_query($link, $sql);
-
-// die if SQL statement failed
-if (!$result) {
-  http_response_code(404);
-  die(mysqli_error());
-}
-
 // Print results
 if ($method == 'GET') {
-  if (!$key) echo '[';
-  for ($i=0;$i<mysqli_num_rows($result);$i++) {
-    echo ($i>0?',':'').json_encode(mysqli_fetch_object($result));
+  $myArray = array();
+  while($row = $result->fetch_array(MYSQLI_ASSOC)) {
+          $myArray[] = $row;
   }
-  if (!$key) echo ']';
+  echo json_encode($myArray);
 }
-
-// close mysql connection
-mysqli_close($link);
