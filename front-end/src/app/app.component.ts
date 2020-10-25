@@ -13,6 +13,7 @@ export class AppComponent implements OnInit {
     var url = new URL('https://stacksbystacks.com/Sql.php');
     url.searchParams.append('columns', 'game_date');
     url.searchParams.append('table', 'game');
+    url.searchParams.append('order', 'game_date desc');
   	let response = await fetch(url.href);
   	this.dates = await response.json();
   }

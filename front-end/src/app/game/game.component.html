@@ -1,2 +1,5 @@
-It's a game.
-<p>{{game_data.home_score}} - {{game_data.away_score}}</p>
+<span [ngStyle]="{ 'font-weight' : (isHomeWon) ? 'bold' : 'normal' }">{{game_data.away_team_name}}</span>&nbsp;&nbsp;
+<span ng-show="scoresExist">{{game_data.away_score}}&nbsp;&nbsp;</span>
+<b>@</b>&nbsp;&nbsp;
+<span ng-show="scoresExist">{{game_data.home_score}}&nbsp;&nbsp;</span>
+<span [ngStyle]="{ 'font-weight' : (isAwayWon) ? 'bold' : 'normal'  }">{{game_data.home_team_name}}</span>

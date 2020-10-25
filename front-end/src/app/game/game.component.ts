@@ -10,6 +10,20 @@ export class GameComponent implements OnInit {
 
   constructor() { }
 
+  get scoresExist() {
+    return this.game_data.play_status != "UPCOMING";
+  }
+
+  get isAwayWon() {
+    if (this.game_data.play_status != "PAST") return false;
+    return this.game_data.home_score > this.game_data.away_score;
+  }
+
+  get isHomeWon() {
+    if (this.game_data.play_status != "PAST") return false;
+    return this.game_data.home_score < this.game_data.away_score;
+  }
+
   ngOnInit(): void {
   }
 

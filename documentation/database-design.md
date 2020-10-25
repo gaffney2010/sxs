@@ -19,6 +19,8 @@ Columns:
 
 (+) Part of the primary key
 
+We also have a view, games_with_team_names, which has the same fields pluse home_team_name and away_team_name.
+
 team table
 ----------
 
