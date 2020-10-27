@@ -1,0 +1,39 @@
+ #header1 {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 50px;
+  overflow: hidden;
+}
+#header2 {
+  position: absolute;
+  top: 50px;
+  left: 0;
+  width: 100%;
+  height: 3px;
+  overflow: hidden;
+  background: #292929;
+}
+#header3 {
+  position: absolute;
+  top: 53px;
+  left: 0;
+  width: 100%;
+  height: 8px;
+  overflow: hidden;
+  background: #F59300;
+}
+#body-clear {
+  position: absolute;
+  top: 61px;
+  left: 0;
+  width: 100%;
+  background: #FFFFFF;
+}
+#box {
+  position: relative;
+  left: 10px;
+  width: 600px;
+  background: #FFFEF2;
+}
