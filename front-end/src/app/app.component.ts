@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { GameDate } from './shared_interfaces';
 
 @Component({
   selector: 'app-root',
@@ -6,8 +7,8 @@ import { Component, OnInit } from '@angular/core';
   styleUrls: ['./app.component.css']
 })
 export class AppComponent implements OnInit {
-  title = 'front-end';
-  dates;
+  title: string = 'front-end';
+  dates: Array<GameDate>
 
   async ngOnInit() {
     var url = new URL('https://stacksbystacks.com/Sql.php');

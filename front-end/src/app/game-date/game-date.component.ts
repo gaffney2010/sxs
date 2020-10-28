@@ -1,4 +1,5 @@
 import { Component, OnInit, Input } from '@angular/core';
+import { GameDate, Game } from '../shared_interfaces';
 
 @Component({
   selector: 'app-game-date',
@@ -6,8 +7,8 @@ import { Component, OnInit, Input } from '@angular/core';
   styleUrls: ['./game-date.component.css']
 })
 export class GameDateComponent implements OnInit {
-  @Input() game_date;
-  games;
+  @Input() game_date: GameDate;
+  games: Array<Game>;
 
   constructor() { }
 
