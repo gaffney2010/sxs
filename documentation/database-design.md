@@ -38,4 +38,4 @@ Columns:
 
   * team_text
   * team_id
-
+  
