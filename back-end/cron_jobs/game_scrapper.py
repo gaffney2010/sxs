@@ -2,7 +2,7 @@
 
 Schedule:
 Daily at 4am
-0 4 * * * python /home/gaffney/stacks-by-stacks/back-end/dist/game_scrapper
+0 4 * * *
 """
 
 #########################
