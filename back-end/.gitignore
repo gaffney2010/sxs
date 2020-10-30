@@ -5,3 +5,7 @@ test_data/*
 logs/*
 data/*
 */__pycache__/*
+
+# pyinstaller output, may be large
+dist/*
+build/*

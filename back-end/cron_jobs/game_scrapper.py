@@ -2,7 +2,7 @@
 
 Schedule:
 Daily at 4am
-0 0 4 * *
+0 4 * * * python /home/gaffney/stacks-by-stacks/back-end/dist/game_scrapper
 """
 
 #########################
@@ -22,6 +22,7 @@ logging.basicConfig(format="%(asctime)s  %(levelname)s:\t%(module)s::%(funcName)
 from nfl_games import *
 
 iso_year, iso_week = now.isocalendar()[0], now.isocalendar()[1]
+logging.info(f"RUNNING ON: {iso_year}-{iso_week}")
 
 if iso_year != 2020:
     error_msg = "Game scrapper out of bounds!  Not implemented for 2021."

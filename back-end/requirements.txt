@@ -4,5 +4,6 @@ dateparser
 mysqlclient # brew install mysql??
 numpy
 pandas
+pyinstaller
 retrying
 selenium
