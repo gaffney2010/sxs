@@ -2,9 +2,10 @@ import logging
 import traceback
 from typing import Callable
 
+from local_config import SXS
 from shared_tools.cache import *
 
-LOG_DIR = "/home/gaffney/stacks-by-stacks/back-end/logs"
+LOG_DIR = f"{SXS}/back-end/logs"
 ErrorLogger = Callable
 
 

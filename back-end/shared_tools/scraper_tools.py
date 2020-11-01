@@ -62,7 +62,7 @@ def read_url_to_string(url: str, web_driver: WebDriver,
         cacher = Cacher()
 
     @memoize(url, cacher)
-    @swallow_error("")
+    # @swallow_error("")
     @retrying.retry(wait_random_min=200, wait_random_max=400,
                     stop_max_attempt_number=3)
     def read_url_to_string_helper(help_url):

@@ -10,7 +10,9 @@ if sys.platform != "darwin":
     import MySQLdb
 import pandas as pd
 
+from local_config import SXS
 from sql_config import DB_VERSION, SQL_CONFIG
+LOCAL_DB = f"{SXS}/back-end/data/localdb/{DB_VERSION}.db"
 
 INF = 10000  # Must exceed the number of rows for every table.
 NO_TABLES = 10  # For caching
@@ -20,8 +22,6 @@ NO_RETRY = 3
 TEAM_CW_TABLE = "team_cw"
 TEAM_TEXT_COLUMN = "team_text"
 TEAM_ID_COLUMN = "team_id"
-
-LOCAL_DB = f"/home/gaffney/stacks-by-stacks/back-end/data/local_db/{DB_VERSION}.db"
 
 
 @functools.lru_cache(1)
@@ -43,6 +43,7 @@ class SqlConn(object):
             if sys.platform != "darwin":
                 cls._instance._mysql_conn = MySQLdb.connect(**SQL_CONFIG)
             cls._instance._sqlite_conn = sqlite3.connect(LOCAL_DB)
+            cls._instance.columns = None
 
         return cls._instance
 
@@ -64,6 +65,9 @@ class SqlConn(object):
 
         Reads from local (sqlite) database only.
 
+        As a side-effect, this sets columns to the column names.  This allows
+        the function to be more general than table reads.
+
         Args:
             query: The query to do the read.
 
@@ -75,6 +79,9 @@ class SqlConn(object):
 
         cur = self._sqlite_conn.cursor()
         cur.execute(query)
+        self.columns = None  # Clear old.
+        if cur.description:
+            self.columns = [d[0] for d in cur.description]
         return cur.fetchall()
 
     def sql_execute(self, command: str) -> None:
@@ -98,14 +105,6 @@ class SqlConn(object):
 
         if sys.platform != "darwin":
             self._retry_mysql_with_reopen(execute_instructions)
-
-
-@functools.lru_cache(NO_TABLES)
-def _column_names(table_name: str) -> List[str]:
-    """Get the column names for a table as they are in SQL."""
-    # Set up server
-    column_query = f"select column_name from information_schema.columns where table_name='{table_name}';"
-    return [x[0] for x in SqlConn().sql_query(column_query)]
 
 
 def _convert_field_to_sql(value: Any) -> str:
@@ -133,17 +132,15 @@ def add_row_to_table(table_name: str, values: Dict[str, Any]) -> None:
             values, ignore_index=True)
 
     # Start building the SQL instruction
-    values_strings = list()
-    for column in _column_names(table_name):  # Canonical order
-        value = None
-        if column in values:
-            value = values[column]
+    column_strings, values_strings = list(), list()
+    for column, value in values.items():
+        column_strings.append(column)
         values_strings.append(_convert_field_to_sql(value))
+    column_clause = ", ".join(column_strings)
     value_clause = ", ".join(values_strings)
-    db = SQL_CONFIG["db"]
 
     # Execute SQL instruction
-    SqlConn().sql_execute(f"replace into {db}.{table_name} values ({value_clause});")
+    SqlConn().sql_execute(f"replace into {table_name} ({column_clause}) values ({value_clause});")
 
 
 def pull_everything_from_table(table_name: str,
@@ -152,19 +149,17 @@ def pull_everything_from_table(table_name: str,
         if table_name in table_cache():
             return table_cache()[table_name]
 
-    # Set up server
-    sxsql = MySQLdb.connect(**SQL_CONFIG)
-
     # Get data
     data = list()
     for result in SqlConn().sql_query(f"select * from {table_name};"):
+        assert(len(SqlConn().columns) == len(result))
         data.append(
-            {k: v for k, v in zip(_column_names(table_name), result)})
+            {k: v for k, v in zip(SqlConn().columns, result)})
 
     # Convert to a pandas dataframe
     if len(data) == 0:
         # Handle the empty case special.
-        result = pd.DataFrame(columns=_column_names(table_name))
+        result = pd.DataFrame(columns=SqlConn().columns)
     else:
         result = pd.DataFrame(data)
 
@@ -254,7 +249,6 @@ def get_team_id(
     raise Exception(f"Unknown text representing team: {team_text}.")
 
 
-logging.debug(_column_names("team_cw"))
 logging.debug(get_team_id("green bay"))
 logging.debug(get_team_id("packers"))
 logging.debug(get_team_id("green bay packers"))

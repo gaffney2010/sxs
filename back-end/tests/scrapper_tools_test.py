@@ -8,7 +8,7 @@ class ScrapperTest(unittest.TestCase):
 
     def test(self):
         html = "https://stacksbystacks.com/test_file.txt"
-        test_dir = "/home/gaffney/stacks-by-stacks/back-end/test_data"
+        test_dir = f"{SXS}/back-end/test_data"
 
         with WebDriver() as driver:
             result = read_url_to_string(html, driver, WriteCacher(test_dir))

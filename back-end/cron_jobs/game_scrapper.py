@@ -7,7 +7,8 @@ Daily at 4am
 
 #########################
 # Logging logic
-LOG_FOLDER = "/home/gaffney/stacks-by-stacks/back-end/logs/"
+from local_config import SXS
+LOG_FOLDER = f"{SXS}/back-end/logs/"
 
 from datetime import datetime
 

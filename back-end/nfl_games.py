@@ -4,11 +4,12 @@ logging.basicConfig(format="%(asctime)s  %(levelname)s:\t%(module)s::%(funcName)
 import argparse
 from bs4 import BeautifulSoup
 
+from local_config import SXS
 from shared_tools.date_reader import *
 from shared_tools.scraper_tools import *
 from sql import *
 
-RAW_HTML_DIR = "/home/gaffney/stacks-by-stacks/back-end/data/raw_html"
+RAW_HTML_DIR = f"{SXS}/back-end/data/raw_html"
 NFL_PAGE = "https://www.nfl.com/schedules/{}/REG{}/"
 
 raw_html_cacher = TimedReadWriteCacher(directory=RAW_HTML_DIR, age_days=1)
@@ -65,10 +66,11 @@ def pull_week(season: int, week: int) -> None:
             add_row_to_table("game", new_game)
 
 
-if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Games scraper")
-    parser.add_argument("--season", required=True)
-    parser.add_argument("--week", required=True)
-    args = parser.parse_args()
-
-    pull_week(args.season, args.week)
+pull_week(2020, 2)
+# if __name__ == "__main__":
+#     parser = argparse.ArgumentParser(description="Games scraper")
+#     parser.add_argument("--season", required=True)
+#     parser.add_argument("--week", required=True)
+#     args = parser.parse_args()
+#
+#     pull_week(args.season, args.week)
