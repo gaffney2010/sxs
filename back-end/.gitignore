@@ -9,3 +9,4 @@ data/*
 # pyinstaller output, may be large
 dist/*
 build/*
+.idea/*

@@ -3,8 +3,8 @@ logging.basicConfig(format="%(asctime)s  %(levelname)s:\t%(module)s::%(funcName)
 
 import argparse
 from bs4 import BeautifulSoup
-import dateparser
 
+from shared_tools.date_reader import *
 from shared_tools.scraper_tools import *
 from sql import *
 
@@ -23,7 +23,7 @@ def pull_week(season: int, week: int) -> None:
     main_section = nfl_page.find("div", {"data-require": "modules/scheduleByWeek"})
     for day_section in main_section.select("div[class^=d3-l-col]"):
         day_header = day_section.find("h2").contents[0]
-        date = dateparser.parse(day_header)
+        date = read_date(day_header)
         date_int = date.year*10000 + date.month*100 + date.day
         for div in day_section.select("div[class^=nfl-c-matchup-strip\ ]"):
             new_game = dict()

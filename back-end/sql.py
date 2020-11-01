@@ -2,9 +2,12 @@ import functools
 import logging
 from enum import Enum
 import sqlite3
+import sys
 from typing import Any, Callable, Dict, List, Optional, Tuple
 
-import MySQLdb
+if sys.platform != "darwin":
+    # Doesn't work on my mac.
+    import MySQLdb
 import pandas as pd
 
 from sql_config import DB_VERSION, SQL_CONFIG
@@ -37,7 +40,8 @@ class SqlConn(object):
 
             # Connect to SQL with SQL_CONFIG settings.
             logging.debug("Initializing new SqlConn.")
-            cls._instance._mysql_conn = MySQLdb.connect(**SQL_CONFIG)
+            if sys.platform != "darwin":
+                cls._instance._mysql_conn = MySQLdb.connect(**SQL_CONFIG)
             cls._instance._sqlite_conn = sqlite3.connect(LOCAL_DB)
 
         return cls._instance
@@ -92,7 +96,8 @@ class SqlConn(object):
             self._mysql_conn.cursor().execute(command)
             self._mysql_conn.commit()
 
-        self._retry_mysql_with_reopen(execute_instructions)
+        if sys.platform != "darwin":
+            self._retry_mysql_with_reopen(execute_instructions)
 
 
 @functools.lru_cache(NO_TABLES)
