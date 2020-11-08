@@ -60,7 +60,7 @@ def pull_week(season: int, week: int, prompt_on_miss: bool = True) -> None:
                 new_game["home_score"] = int(home.find("div", {
                     "class": "nfl-c-matchup-strip__team-score"}).contents[0].strip())
 
-            # TODO: Implement mutual_location.
+            # TODO(#17): Implement mutual_location.
 
             logging.debug(new_game)
             add_row_to_table("game", new_game)

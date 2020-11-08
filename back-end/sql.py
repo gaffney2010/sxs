@@ -200,7 +200,6 @@ class CacheStrategy(Enum):
     FROM_TABLE_ON_MISS = 3
 
 
-# TODO: Specify an exception type.
 def get_team_id(
         team_text: str,
         cache_strategy: CacheStrategy = CacheStrategy.FROM_TABLE_ON_MISS,
@@ -220,7 +219,7 @@ def get_team_id(
         Our internal ID.
 
     Raises:
-        Exception: If the text is not known or prompt is not a team ID
+        ValueError: If the text is not known or prompt is not a team ID
     """
     team_text = _clean_text(team_text)
 
@@ -244,9 +243,9 @@ def get_team_id(
             add_row_to_table(TEAM_CW_TABLE, {TEAM_TEXT_COLUMN: team_text,
                                              TEAM_ID_COLUMN: team_id})
             return team_id
-        raise Exception(f"Unknown team ID: {team_id}.")
+        raise ValueError(f"Unknown team ID: {team_id}.")
 
-    raise Exception(f"Unknown text representing team: {team_text}.")
+    raise ValueError(f"Unknown text representing team: {team_text}.")
 
 
 logging.debug(get_team_id("green bay"))
