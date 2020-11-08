@@ -24,4 +24,4 @@ import shutil
 
 DB_NAME = "v1.db"
 
-shutil.copyfile(src=f"{SXS}/data/localdb/{DB_NAME}", dst=f"{SXS}/data/backup_db/{data}_{DB_NAME}")
+shutil.copyfile(src=f"{SXS}/back-end/data/local_db/{DB_NAME}", dst=f"{SXS}/back-end/data/backup_db/{date}_{DB_NAME}")

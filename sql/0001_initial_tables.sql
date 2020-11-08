@@ -20,8 +20,8 @@ create table if not exists team (
 create table if not exists team_cw (
     team_text varchar(255),
     team_id int,
-    primary key (team_text),
-    foreign key (team_id) references team(team_id)
+    primary key (team_text)
+    -- foreign key (team_id) references team(team_id)
 );
 
 CREATE VIEW `games_with_team_names` AS

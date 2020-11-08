@@ -66,7 +66,8 @@ def pull_week(season: int, week: int, prompt_on_miss: bool = True) -> None:
             add_row_to_table("game", new_game)
 
 
-pull_week(2020, 2)
+for i in range(2, 9):
+    pull_week(2020, i)
 # if __name__ == "__main__":
 #     parser = argparse.ArgumentParser(description="Games scraper")
 #     parser.add_argument("--season", required=True)

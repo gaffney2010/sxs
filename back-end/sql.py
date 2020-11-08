@@ -1,8 +1,8 @@
 import functools
 import logging
-from enum import Enum
 import sqlite3
 import sys
+from enum import Enum
 from typing import Any, Callable, Dict, List, Optional, Tuple
 
 if sys.platform != "darwin":
@@ -12,7 +12,8 @@ import pandas as pd
 
 from local_config import SXS
 from sql_config import DB_VERSION, SQL_CONFIG
-LOCAL_DB = f"{SXS}/back-end/data/localdb/{DB_VERSION}.db"
+
+LOCAL_DB = f"{SXS}/back-end/data/local_db/{DB_VERSION}.db"
 
 INF = 10000  # Must exceed the number of rows for every table.
 NO_TABLES = 10  # For caching
@@ -58,7 +59,7 @@ class SqlConn(object):
                 logging.debug("Initializing new SqlConn.")
                 self._mysql_conn = MySQLdb.connect(**SQL_CONFIG)
 
-        raise(recent_exception)
+        raise (recent_exception)
 
     def sql_query(self, query: str) -> List[Tuple]:
         """Low-level SQL query.
@@ -115,7 +116,8 @@ def _convert_field_to_sql(value: Any) -> str:
     return str(value)
 
 
-def add_row_to_table(table_name: str, values: Dict[str, Any]) -> None:
+def add_row_to_table(table_name: str, values: Dict[str, Any],
+                     conn=None) -> None:
     """Add the given values to the table.
 
     Technically executes a replace, which will delete old values if the primary
@@ -125,7 +127,11 @@ def add_row_to_table(table_name: str, values: Dict[str, Any]) -> None:
         table_name: The name of the table in the default DB.
         values: A dict where the keys are the row names.  Will ignore any
             invalid keys.
+        conn: If set use for reads.  Otherwise use default.
     """
+    if conn is None:
+        conn = SqlConn()
+
     # Update cache
     if table_name in table_cache():
         table_cache()[table_name] = table_cache()[table_name].append(
@@ -140,26 +146,41 @@ def add_row_to_table(table_name: str, values: Dict[str, Any]) -> None:
     value_clause = ", ".join(values_strings)
 
     # Execute SQL instruction
-    SqlConn().sql_execute(f"replace into {table_name} ({column_clause}) values ({value_clause});")
+    conn.sql_execute(
+        f"replace into {table_name} ({column_clause}) values ({value_clause});")
 
 
 def pull_everything_from_table(table_name: str,
-                               read_from_cache: bool = True) -> pd.DataFrame:
+                               read_from_cache: bool = True,
+                               conn=None) -> pd.DataFrame:
+    """Pulls the entire thing at once.
+
+    Args:
+        table_name: The table to read
+        read_from_cache: If true read from local variable
+        conn: If set use for reads.  Otherwise use default.
+
+    Returns:
+        A dataframe with the data.
+    """
+    if conn is None:
+        conn = SqlConn()
+
     if read_from_cache:
         if table_name in table_cache():
             return table_cache()[table_name]
 
     # Get data
     data = list()
-    for result in SqlConn().sql_query(f"select * from {table_name};"):
-        assert(len(SqlConn().columns) == len(result))
+    for result in conn.sql_query(f"select * from {table_name};"):
+        assert (len(conn.columns) == len(result))
         data.append(
-            {k: v for k, v in zip(SqlConn().columns, result)})
+            {k: v for k, v in zip(conn.columns, result)})
 
     # Convert to a pandas dataframe
     if len(data) == 0:
         # Handle the empty case special.
-        result = pd.DataFrame(columns=SqlConn().columns)
+        result = pd.DataFrame(columns=conn.columns)
     else:
         result = pd.DataFrame(data)
 
@@ -249,7 +270,7 @@ def get_team_id(
     raise ValueError(f"Unknown text representing team: {team_text}.")
 
 
-logging.debug(get_team_id("green bay"))
-logging.debug(get_team_id("packers"))
-logging.debug(get_team_id("green bay packers"))
-logging.debug(get_team_id("gb"))
+# logging.debug(get_team_id("green bay"))
+# logging.debug(get_team_id("packers"))
+# logging.debug(get_team_id("green bay packers"))
+# logging.debug(get_team_id("gb"))
