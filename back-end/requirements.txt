@@ -7,3 +7,4 @@ pandas
 pyinstaller
 retrying
 selenium
+shutil
