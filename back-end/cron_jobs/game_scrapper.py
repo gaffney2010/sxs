@@ -31,5 +31,5 @@ if iso_year != 2020:
     raise NotImplementedError(error_msg)
 
 # Update this week and last.
-pull_week(iso_year, iso_week-37)
-pull_week(iso_year, iso_week-36)
+pull_week(iso_year, iso_week-37, prompt_on_miss=False)
+pull_week(iso_year, iso_week-36, prompt_on_miss=False)

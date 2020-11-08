@@ -15,7 +15,7 @@ NFL_PAGE = "https://www.nfl.com/schedules/{}/REG{}/"
 raw_html_cacher = TimedReadWriteCacher(directory=RAW_HTML_DIR, age_days=1)
 
 
-def pull_week(season: int, week: int) -> None:
+def pull_week(season: int, week: int, prompt_on_miss: bool = True) -> None:
     with WebDriver() as driver:
         nfl_page_text = read_url_to_string(NFL_PAGE.format(season, week), driver,
                                            cacher=raw_html_cacher)
@@ -51,8 +51,8 @@ def pull_week(season: int, week: int) -> None:
                 "class": "nfl-c-matchup-strip__team-fullname"}).contents[0].strip()
             home_name = home.find("span", {
                 "class": "nfl-c-matchup-strip__team-fullname"}).contents[0].strip()
-            new_game["away_team_id"] = get_team_id(away_name)
-            new_game["home_team_id"] = get_team_id(home_name)
+            new_game["away_team_id"] = get_team_id(away_name, prompt_on_miss=prompt_on_miss)
+            new_game["home_team_id"] = get_team_id(home_name, prompt_on_miss=prompt_on_miss)
 
             if game_type_str == "post-game":
                 new_game["away_score"] = int(away.find("div", {
