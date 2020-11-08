@@ -242,6 +242,7 @@ def get_team_id(
         if 1 <= team_id <= NFL_TEAMS:
             add_row_to_table(TEAM_CW_TABLE, {TEAM_TEXT_COLUMN: team_text,
                                              TEAM_ID_COLUMN: team_id})
+            logging.info(f"Saving team {team_text} with ID {team_id}.")
             return team_id
         raise ValueError(f"Unknown team ID: {team_id}.")
 
