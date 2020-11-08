@@ -38,4 +38,36 @@ Columns:
 
   * team_text
   * team_id
-  
+
+expert table
+------------
+
+Columns:
+  * expert_id
+  * short_name
+
+stack table
+-----------
+
+There are three ways that we may get a stack:
+
+  1. We may get a prediction of who will win.
+  2. We may get a prediction of who will beat the spread.
+  3. We may get a prediction of the score.
+
+Of course, spread here is the spread provided by the predictor.
+
+Columns:
+
+  * expert_id
+  * prediction_date
+  * fetched_date
+  * game_date
+  * team_1
+  * score_1 - scenario 3 only
+  * team_2
+  * score_2 - scenario 3 only
+  * predicted_winner - scenario 1 and 3
+  * predicted_winner_with_spread - scenario 2 and later 3 
+  * spread_favorite - scenario 2
+  * spread_amt - scenario 2
