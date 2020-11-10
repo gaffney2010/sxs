@@ -44,7 +44,17 @@ expert table
 
 Columns:
   * expert_id
-  * short_name
+  * name
+
+expert_cw table
+---------------
+
+This is a table that will let us look up a team_id, which is a foreign key
+
+Columns:
+
+  * expert_text
+  * expert_id
 
 stack table
 -----------
@@ -57,17 +67,27 @@ There are three ways that we may get a stack:
 
 Of course, spread here is the spread provided by the predictor.
 
+Notice that affliate is conspicuously NOT an id like expert is.
+
+Team ids can be looked up in the team table.  game_date and home_team can be used to look up game details in the game table.
+
+There is no primary key for this table.
+
 Columns:
 
   * expert_id
+  * expert_type - "HUMAN", "MODEL"
+  * affiliate - e.g. ESPN, 538
   * prediction_date
   * fetched_date
   * game_date
-  * team_1
-  * score_1 - scenario 3 only
-  * team_2
-  * score_2 - scenario 3 only
-  * predicted_winner - scenario 1 and 3
-  * predicted_winner_with_spread - scenario 2 and later 3 
-  * spread_favorite - scenario 2
+  * home_team_id
+  * home_score - scenario 3 only
+  * away_team_id
+  * away_score - scenario 3 only
+  * predicted_winner_id - scenario 1 and 3
+  * predicted_winner_id_with_spread - scenario 2 and later 3 
+  * spread_favorite - scenario 2.  If even, list home team and set spread_amt to 0.
   * spread_amt - scenario 2
+  * body - Text explaining their choice
+  * link - URL to opinion

@@ -1,0 +1,1 @@
+For each i, run ????-v[i]-*.sql in order, then run v[i]-migrate.sh.
