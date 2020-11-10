@@ -4,3 +4,6 @@
 python copy_db.py --version=v1 --table=game
 python copy_db.py --version=v1 --table=team
 python copy_db.py --version=v1 --table=team_cw
+python copy_db.py --version=v1 --table=expert
+python copy_db.py --version=v1 --table=expert_cw
+python copy_db.py --version=v1 --table=stack
