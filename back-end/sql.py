@@ -22,6 +22,9 @@ NO_RETRY = 3
 TEAM_CW_TABLE = "team_cw"
 TEAM_TEXT_COLUMN = "team_text"
 TEAM_ID_COLUMN = "team_id"
+EXPERT_CW_TABLE = "expert_cw"
+EXPERT_TEXT_COLUMN = "expert_text"
+EXPERT_ID_COLUMN = "expert_id"
 
 
 @functools.lru_cache(1)
@@ -35,8 +38,7 @@ class SqlConn(object):
 
     def __new__(cls, *args, **kwargs):
         if not cls._instance:
-            cls._instance = super(SqlConn, cls).__new__(
-                cls, *args, **kwargs)
+            cls._instance = super(SqlConn, cls).__new__(cls, *args, **kwargs)
 
             # Connect to SQL with SQL_CONFIG settings.
             logging.debug("Initializing new SqlConn.")
@@ -111,12 +113,13 @@ def _convert_field_to_sql(value: Any) -> str:
     if value is None:
         return "NULL"
     if isinstance(value, str):
-        return f"\"{value}\""
+        return f'"{value}"'
     return str(value)
 
 
-def add_row_to_table(table_name: str, values: Dict[str, Any],
-                     conn=None) -> None:
+def add_row_to_table(
+    table_name: str, values: Dict[str, Any], conn=None
+) -> None:
     """Add the given values to the table.
 
     Technically executes a replace, which will delete old values if the primary
@@ -134,7 +137,8 @@ def add_row_to_table(table_name: str, values: Dict[str, Any],
     # Update cache
     if table_name in table_cache():
         table_cache()[table_name] = table_cache()[table_name].append(
-            values, ignore_index=True)
+            values, ignore_index=True
+        )
 
     # Start building the SQL instruction
     column_strings, values_strings = list(), list()
@@ -146,12 +150,13 @@ def add_row_to_table(table_name: str, values: Dict[str, Any],
 
     # Execute SQL instruction
     conn.sql_execute(
-        f"replace into {table_name} ({column_clause}) values ({value_clause});")
+        f"replace into {table_name} ({column_clause}) values ({value_clause});"
+    )
 
 
-def pull_everything_from_table(table_name: str,
-                               read_from_cache: bool = True,
-                               conn=None) -> pd.DataFrame:
+def pull_everything_from_table(
+    table_name: str, read_from_cache: bool = True, conn=None
+) -> pd.DataFrame:
     """Pulls the entire thing at once.
 
     Args:
@@ -172,9 +177,8 @@ def pull_everything_from_table(table_name: str,
     # Get data
     data = list()
     for result in conn.sql_query(f"select * from {table_name};"):
-        assert (len(conn.columns) == len(result))
-        data.append(
-            {k: v for k, v in zip(conn.columns, result)})
+        assert len(conn.columns) == len(result)
+        data.append({k: v for k, v in zip(conn.columns, result)})
 
     # Convert to a pandas dataframe
     if len(data) == 0:
@@ -192,36 +196,53 @@ def _clean_text(txt: str) -> str:
     return txt.lower().strip()
 
 
-def _get_team_id(team_text: str, cache: bool) -> Optional[int]:
+def _get_id(
+    lookup_value: str,
+    table_name: str,
+    text_column: str,
+    id_column: str,
+    cache: bool,
+) -> Optional[int]:
     """Given a string that represents a team, find the ID.
 
     Searches known team texts.
 
     Args:
-        team_text: Represents the team.
+        lookup_value: The value that we want to find the ID for.
+        table_name: Name of cross-walk table to use.
+        text_column: Name of the column with the lookupable values.
+        id_column: Name of the column with the IDs.
         cache: If to read from the cached version of TEAM_CW_TABLE.
 
     Returns:
         Our internal ID or None if key is not found.
     """
-    cw = pull_everything_from_table(TEAM_CW_TABLE, read_from_cache=cache)
-    filtered = cw[cw[TEAM_TEXT_COLUMN] == team_text]
+    cw = pull_everything_from_table(table_name, read_from_cache=cache)
+    filtered = cw[cw[text_column] == team_text]
     if filtered.empty:
         return None
-    return filtered.iloc[0][TEAM_ID_COLUMN]
+    return filtered.iloc[0][id_column]
 
 
-def get_team_id(
-        team_text: str,
-        prompt_on_miss: bool = True) -> int:
-    """Given a string that represents a team, find the ID.
+def _get_or_prompt_id(
+    lookup_value: str,
+    table_name: str,
+    text_column: str,
+    id_column: str,
+    id_type: str,
+    prompt_on_miss: bool = True,
+) -> int:
+    """Given a string, lookup the ID.
 
-    Searches known team texts.  Caching strategy and prompt on miss describe how
-    to handle cache misses.
+    Searches the passed table name.  If missed from local cache, look up on
+    remote table, then potentially prompt on miss.
 
     Args:
-        team_text: Represents the team.
-        cache_strategy: How to handle misses.
+        lookup_value: The value that we want to find the ID for.
+        table_name: Name of cross-walk table to use.
+        text_column: Name of the column with the lookupable values.
+        id_column: Name of the column with the IDs.
+        id_type: What we're pulling, for use in error messages.
         prompt_on_miss: Ask the user to enter the team ID.  If they do, then
             will update the TEAM_CW table.
 
@@ -231,31 +252,57 @@ def get_team_id(
     Raises:
         ValueError: If the text is not known or prompt is not a team ID
     """
-    team_text = _clean_text(team_text)
+    lookup_value = _clean_text(lookup_value)
 
     # Pull from remote on miss
-    result = _get_team_id(team_text, cache=True)
+    result = _get_id(
+        lookup_value, table_name, text_column, id_column, cache=True
+    )
     if not result:
-        result = _get_team_id(team_text, cache=False)
+        result = _get_id(
+            lookup_value, table_name, text_column, id_column, cache=False
+        )
 
     if result:
         return result
 
     if prompt_on_miss:
         team_id = input(
-            f"Unknown text representing team: {team_text}.  Enter team ID or 0 to fail:")
+            "Unknown text representing {}: {}.  Enter {} ID or 0 to fail:".format(
+                id_type, lookup_value, id_type
+            )
+        )
         team_id = int(team_id)
         if 1 <= team_id <= NFL_TEAMS:
-            add_row_to_table(TEAM_CW_TABLE, {TEAM_TEXT_COLUMN: team_text,
-                                             TEAM_ID_COLUMN: team_id})
-            logging.info(f"Saving team {team_text} with ID {team_id}.")
+            add_row_to_table(
+                table_name, {text_column: lookup_value, id_column: team_id}
+            )
+            logging.info(f"Saving {id_type} {lookup_value} with ID {team_id}.")
             return team_id
-        raise ValueError(f"Unknown team ID: {team_id}.")
+        raise ValueError(f"Unknown {id_type} ID: {team_id}.")
 
-    raise ValueError(f"Unknown text representing team: {team_text}.")
+    raise ValueError(f"Unknown text representing team: {lookup_value}.")
 
 
-# logging.debug(get_team_id("green bay"))
-# logging.debug(get_team_id("packers"))
-# logging.debug(get_team_id("green bay packers"))
-# logging.debug(get_team_id("gb"))
+def get_team_id(team_text: str, prompt_on_miss: bool = True) -> int:
+    """Given a string that represents a team, find the ID."""
+    return _get_or_prompt_id(
+        lookup_value=team_text,
+        table_name=TEAM_CW_TABLE,
+        text_column=TEAM_TEXT_COLUMN,
+        id_column=TEAM_ID_COLUMN,
+        id_type="team",
+        prompt_on_miss=prompt_on_miss,
+    )
+
+
+def get_expert_id(expert_text: str, prompt_on_miss: bool = True) -> int:
+    """Given a string that represents a team, find the ID."""
+    return _get_or_prompt_id(
+        lookup_value=expert_text,
+        table_name=EXPERT_CW_TABLE,
+        text_column=EXPERT_TEXT_COLUMN,
+        id_column=EXPERT_ID_COLUMN,
+        id_type="team",
+        prompt_on_miss=prompt_on_miss,
+    )
