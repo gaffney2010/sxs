@@ -2,7 +2,6 @@ import functools
 import logging
 import sqlite3
 import sys
-from enum import Enum
 from typing import Any, Callable, Dict, List, Optional, Tuple
 
 if sys.platform != "darwin":
@@ -212,19 +211,8 @@ def _get_team_id(team_text: str, cache: bool) -> Optional[int]:
     return filtered.iloc[0][TEAM_ID_COLUMN]
 
 
-class CacheStrategy(Enum):
-    # Read from the local cache only
-    FROM_CACHE = 1
-    # Read from the SQL table only
-    FROM_TABLE = 2
-    # Read from the SQL table if not in the cache.
-    FROM_TABLE_ON_MISS = 3
-
-
-# TODO: Expire CacheStrategy.  YAGNI.
 def get_team_id(
         team_text: str,
-        cache_strategy: CacheStrategy = CacheStrategy.FROM_TABLE_ON_MISS,
         prompt_on_miss: bool = True) -> int:
     """Given a string that represents a team, find the ID.
 
@@ -245,14 +233,10 @@ def get_team_id(
     """
     team_text = _clean_text(team_text)
 
-    if cache_strategy == CacheStrategy.FROM_CACHE:
-        result = _get_team_id(team_text, True)
-    if cache_strategy == CacheStrategy.FROM_TABLE:
-        result = _get_team_id(team_text, False)
-    if cache_strategy == CacheStrategy.FROM_TABLE_ON_MISS:
-        result = _get_team_id(team_text, True)
-        if not result:
-            result = _get_team_id(team_text, False)
+    # Pull from remote on miss
+    result = _get_team_id(team_text, cache=True)
+    if not result:
+        result = _get_team_id(team_text, cache=False)
 
     if result:
         return result
