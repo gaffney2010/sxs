@@ -221,6 +221,7 @@ class CacheStrategy(Enum):
     FROM_TABLE_ON_MISS = 3
 
 
+# TODO: Expire CacheStrategy.  YAGNI.
 def get_team_id(
         team_text: str,
         cache_strategy: CacheStrategy = CacheStrategy.FROM_TABLE_ON_MISS,
