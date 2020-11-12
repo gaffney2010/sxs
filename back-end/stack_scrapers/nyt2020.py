@@ -6,6 +6,7 @@ Can use NYT API to find articles.  I don't know how I will get past pay wall, I
 may need to log in on Firefox.
 """
 
+import dateparser
 import datetime
 import re
 from typing import Iterator
@@ -72,10 +73,22 @@ def read_article(text: str, link: str) -> None:
     # Get the author
     match = re.search(r"nytimes.com/by/[^\"]\"", text)
     author = " ".join(match.split("-"))
+    expert_id = get_expert_id(author)
 
     # Get fetched date
     now = datetime.now()
     date = now.year * 10000 + now.month * 100 + now.day
+
+    # Get latest date
+    if text.find("Updated") != -1:
+        # Look for "Updated <!-- -->Nov. 8, 2020</span>"
+        pred = dateparser.parse(text.split("Updated <!-- -->")[1].split("</span>")[0])
+        prediction_date = pred.year * 10000 + pred.month * 100 + pred.day
+    else:
+        # Look for "Published <!-- -->Nov. 8, 2020</span>"
+        pred = dateparser.parse(text.split("Published <!-- -->")[1].split("</span>")[0])
+        prediction_date = pred.year * 10000 + pred.month * 100 + pred.day
+
 
     for game in read_games(text):
         home_team_id = get_team_id(game.home_team)
@@ -108,10 +121,10 @@ def read_article(text: str, link: str) -> None:
             )
 
         new_row = {
-            "expert_id": "...",
+            "expert_id": expert_id,
             "expert_type": "HUMAN",
             "affiliate": "NYT",
-            "prediction_date": "...",
+            "prediction_date": prediction_date,
             "fetched_date": date,
             "home_team_id": home_team_id,
             "away_team_id": away_team_id,
