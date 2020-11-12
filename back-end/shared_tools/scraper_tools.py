@@ -7,6 +7,7 @@ import selenium.webdriver
 from shared_tools.logger import *
 
 DRIVER_DELAY_SEC = 3
+RAW_HTML_DIR = f"{SXS}/back-end/data/raw_html"
 
 
 class WebDriver(object):
