@@ -99,7 +99,7 @@ class SqlConn(object):
         """
         logging.info(f"Execute: {command}")
 
-        if not safe_mode:
+        if safe_mode:
             # In this case, print only.
             return
 
@@ -225,7 +225,7 @@ def _get_id(
         Our internal ID or None if key is not found.
     """
     cw = pull_everything_from_table(table_name, read_from_cache=cache)
-    filtered = cw[cw[text_column] == team_text]
+    filtered = cw[cw[text_column] == lookup_value]
     if filtered.empty:
         return None
     return filtered.iloc[0][id_column]

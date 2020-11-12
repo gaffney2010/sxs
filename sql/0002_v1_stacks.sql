@@ -21,7 +21,7 @@ create table if not exists stack (
     predicted_winner_id int,
     predicted_winner_id_with_spread int,
     spread_favorite int,
-    spread_amt int,
+    spread_amt float,
     body varchar(255),
     link varchar(255)
 );

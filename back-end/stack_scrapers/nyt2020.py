@@ -5,6 +5,8 @@ URL like https://www.nytimes.com/2020/11/05/sports/football/nfl-picks-week-9.htm
 Can use NYT API to find articles.  I don't know how I will get past pay wall, I
 may need to log in on Firefox.
 """
+import logging  # Must be first
+logging.basicConfig(format="%(asctime)s  %(levelname)s:\t%(module)s::%(funcName)s:%(lineno)d\t-\t%(message)s", level=logging.INFO)
 
 import dateparser
 import datetime
@@ -22,10 +24,10 @@ from sql import *
 class GameInfo(object):
     """All info I can pull from the game block, with nothing processed."""
 
-    home_team: str
-    away_team: str
-    pick_clause: str  # "<Team> <Spread>"
-    body: str
+    home_team: str = attr.ib()
+    away_team: str = attr.ib()
+    pick_clause: str = attr.ib()  # "<Team> <Spread>"
+    body: str = attr.ib()
 
 
 def read_games(text: str) -> Iterator[GameInfo]:
@@ -42,42 +44,45 @@ def read_games(text: str) -> Iterator[GameInfo]:
         raise ValueError("Expect even number of <strong> tags.")
 
     for split_i, split in enumerate(strong_splits):
-        if split_i % 2 == 0:
-            continue
-        # This is a game block
-        next_strong_ending = strong_splits[split_i + 1].split("</p>")[0]
-        game_block = f"<strong{split}<strong{next_strong_ending}</p>"
-        game_soup = BeautifulSoup(game_block, features="html.parser")
+        try:
+            if split_i % 2 == 0:
+                continue
+            # This is a game block
+            next_strong_ending = strong_splits[split_i + 1].split("</p>")[0]
+            game_block = f"<strong{split}<strong{next_strong_ending}</p>"
+            game_soup = BeautifulSoup(game_block, features="html.parser")
 
-        teams = game_soup.strong.contents[0]
-        away_team, home_team = teams.split(" at ")
+            teams = game_soup.strong.contents[0]
+            away_team, home_team = teams.split(" at ")
 
-        # Delete the first two and the last paragraph of the game_block
-        ps = list(game_soup.find_all("p"))
-        p_texts = list()
-        for pi, p in enumerate(ps):
-            if pi not in (0, 1, len(ps) - 1):
-                p_texts.append(p.text)
-        body = " ".join(p_texts)
+            # Delete the first two and the last paragraph of the game_block
+            ps = list(game_soup.find_all("p"))
+            p_texts = list()
+            for pi, p in enumerate(ps):
+                if pi not in (0, 1, len(ps) - 1):
+                    p_texts.append(p.text)
+            body = " ".join(p_texts)
 
-        pick_clause = game_block.split("</strong>")[-1].split("</p>")[0].strip()
+            pick_clause = game_block.split("</strong>")[-1].split("</p>")[0].strip()
 
-        yield GameInfo(
-            away_team=away_team,
-            home_team=home_team,
-            pick_clause=pick_clause,
-            body=body,
-        )
+            yield GameInfo(
+                home_team=home_team,
+                away_team=away_team,
+                pick_clause=pick_clause,
+                body=body,
+            )
+        except:
+            pass
 
 
 def read_article(text: str, link: str) -> None:
     # Get the author
-    match = re.search(r"nytimes.com/by/[^\"]\"", text)
-    author = " ".join(match.split("-"))
+    match = re.search(r"nytimes.com/by/([^\"]+)\"", text)
+    author = " ".join(match.group(1).split("-"))
     expert_id = get_expert_id(author)
 
     # Get fetched date
-    now = datetime.now()
+    now = datetime.datetime.now()
     date = now.year * 10000 + now.month * 100 + now.day
 
     # Get latest date
@@ -107,7 +112,7 @@ def read_article(text: str, link: str) -> None:
 
         if game.pick_clause.find("-") != -1:
             spread_favorite = predicted_winner_id
-            spread_amt = int(game.pick_clause.split("-")[-1])
+            spread_amt = float(game.pick_clause.split("-")[-1])
         elif game.pick_clause.find("+") != -1:
             # Set spread_favorite to the non-predicted-winner
             spread_favorite = (
@@ -115,7 +120,7 @@ def read_article(text: str, link: str) -> None:
                 if predicted_winner_id == home_team_id
                 else home_team_id
             )
-            spread_amt = int(game.pick_clause.split("+")[-1])
+            spread_amt = float(game.pick_clause.split("+")[-1])
         else:
             raise ValueError(
                 f"Unexpected, pick clause malformed: {game.pick_clause}"
