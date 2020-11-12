@@ -86,7 +86,7 @@ class SqlConn(object):
             self.columns = [d[0] for d in cur.description]
         return cur.fetchall()
 
-    def sql_execute(self, command: str) -> None:
+    def sql_execute(self, command: str, safe_mode: bool = False) -> None:
         """Low-level SQL execute.
 
         This will get run both locally (sqlite) and remotely (mysql).
@@ -95,8 +95,13 @@ class SqlConn(object):
 
         Args:
             command: The statement to execute
+            safe_mode: If true, don't actually make any changes to the table.
         """
         logging.info(f"Execute: {command}")
+
+        if not safe_mode:
+            # In this case, print only.
+            return
 
         self._sqlite_conn.cursor().execute(command)
         self._sqlite_conn.commit()
@@ -118,7 +123,7 @@ def _convert_field_to_sql(value: Any) -> str:
 
 
 def add_row_to_table(
-    table_name: str, values: Dict[str, Any], conn=None
+    table_name: str, values: Dict[str, Any], safe_mode: bool = False, conn=None
 ) -> None:
     """Add the given values to the table.
 
@@ -129,6 +134,7 @@ def add_row_to_table(
         table_name: The name of the table in the default DB.
         values: A dict where the keys are the row names.  Will ignore any
             invalid keys.
+        safe_mode: If true, don't actually make any changes to the table.
         conn: If set use for reads.  Otherwise use default.
     """
     if conn is None:
@@ -150,7 +156,8 @@ def add_row_to_table(
 
     # Execute SQL instruction
     conn.sql_execute(
-        f"replace into {table_name} ({column_clause}) values ({value_clause});"
+        f"replace into {table_name} ({column_clause}) values ({value_clause});",
+        safe_mode=safe_mode
     )
 
 
