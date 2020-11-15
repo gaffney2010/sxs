@@ -19,6 +19,17 @@ from bs4 import BeautifulSoup
 from shared_tools.scraper_tools import *
 from sql import *
 
+SAFE_MODE = False
+NYT_URL = "https://www.nytimes.com/2020/11/05/sports/football/nfl-picks-week-9.html"
+
+
+def strip_html(html: str) -> str:
+    html = html.replace("</p>", " </p>")
+    while html.find("  ") != -1:
+        html = html.replace("  ", " ")
+    soup = BeautifulSoup(html, features="html.parser")
+    return soup.text.strip()
+
 
 @attr.s
 class GameInfo(object):
@@ -50,18 +61,15 @@ def read_games(text: str) -> Iterator[GameInfo]:
             # This is a game block
             next_strong_ending = strong_splits[split_i + 1].split("</p>")[0]
             game_block = f"<strong{split}<strong{next_strong_ending}</p>"
-            game_soup = BeautifulSoup(game_block, features="html.parser")
+            logging.debug(game_block)
+            logging.debug("===========")
 
+            game_soup = BeautifulSoup(game_block, features="html.parser")
             teams = game_soup.strong.contents[0]
             away_team, home_team = teams.split(" at ")
 
             # Delete the first two and the last paragraph of the game_block
-            ps = list(game_soup.find_all("p"))
-            p_texts = list()
-            for pi, p in enumerate(ps):
-                if pi not in (0, 1, len(ps) - 1):
-                    p_texts.append(p.text)
-            body = " ".join(p_texts)
+            body = strip_html(game_block.split("</em></p>")[-1].split("<strong")[0])
 
             pick_clause = game_block.split("</strong>")[-1].split("</p>")[0].strip()
 
@@ -71,8 +79,8 @@ def read_games(text: str) -> Iterator[GameInfo]:
                 pick_clause=pick_clause,
                 body=body,
             )
-        except:
-            pass
+        except Exception as e:
+            logging.error(e)
 
 
 def read_article(text: str, link: str) -> None:
@@ -128,7 +136,6 @@ def read_article(text: str, link: str) -> None:
 
         new_row = {
             "expert_id": expert_id,
-            "expert_type": "HUMAN",
             "affiliate": "NYT",
             "prediction_date": prediction_date,
             "fetched_date": date,
@@ -136,15 +143,15 @@ def read_article(text: str, link: str) -> None:
             "away_team_id": away_team_id,
             "predicted_winner_id_with_spread": predicted_winner_id,
             "spread_favorite": spread_favorite,
-            "spread_amount": spread_amt,
+            "spread_amt": spread_amt,
             "body": game.body,
             "link": link,
+            "exclude": False,
         }
-        add_row_to_table("stack", new_row, safe_mode=True)
+        add_row_to_table("stack", new_row, safe_mode=SAFE_MODE)
 
 
-nyt_page = "https://www.nytimes.com/2020/11/05/sports/football/nfl-picks-week-9.html"
 raw_html_cacher = TimedReadWriteCacher(directory=RAW_HTML_DIR, age_days=1)
 with WebDriver() as driver:
-    nfl_page_text = read_url_to_string(nyt_page, driver, cacher=raw_html_cacher)
-read_article(nfl_page_text, nyt_page)
+    nfl_page_text = read_url_to_string(NYT_URL, driver, cacher=raw_html_cacher)
+read_article(nfl_page_text, NYT_URL)

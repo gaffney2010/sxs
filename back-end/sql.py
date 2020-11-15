@@ -20,9 +20,11 @@ NFL_TEAMS = 32
 NO_RETRY = 3
 
 TEAM_CW_TABLE = "team_cw"
+TEAM_ID_TABLE = "team"
 TEAM_TEXT_COLUMN = "team_text"
 TEAM_ID_COLUMN = "team_id"
 EXPERT_CW_TABLE = "expert_cw"
+EXPERT_ID_TABLE = "expert"
 EXPERT_TEXT_COLUMN = "expert_text"
 EXPERT_ID_COLUMN = "expert_id"
 
@@ -112,6 +114,11 @@ class SqlConn(object):
 
         if sys.platform != "darwin":
             self._retry_mysql_with_reopen(execute_instructions)
+
+
+def _get_columns_for_table(table: str) -> List[str]:
+    SqlConn().sql_query(f"select * from {table} limit 1")
+    return SqlConn().columns
 
 
 def _convert_field_to_sql(value: Any) -> str:
@@ -205,7 +212,7 @@ def _clean_text(txt: str) -> str:
 
 def _get_id(
     lookup_value: str,
-    table_name: str,
+    cw_table: str,
     text_column: str,
     id_column: str,
     cache: bool,
@@ -216,7 +223,7 @@ def _get_id(
 
     Args:
         lookup_value: The value that we want to find the ID for.
-        table_name: Name of cross-walk table to use.
+        cw_table: Name of cross-walk table to use.
         text_column: Name of the column with the lookupable values.
         id_column: Name of the column with the IDs.
         cache: If to read from the cached version of TEAM_CW_TABLE.
@@ -224,7 +231,7 @@ def _get_id(
     Returns:
         Our internal ID or None if key is not found.
     """
-    cw = pull_everything_from_table(table_name, read_from_cache=cache)
+    cw = pull_everything_from_table(cw_table, read_from_cache=cache)
     filtered = cw[cw[text_column] == lookup_value]
     if filtered.empty:
         return None
@@ -233,7 +240,8 @@ def _get_id(
 
 def _get_or_prompt_id(
     lookup_value: str,
-    table_name: str,
+    id_table: str,
+    cw_table: str,
     text_column: str,
     id_column: str,
     id_type: str,
@@ -246,7 +254,9 @@ def _get_or_prompt_id(
 
     Args:
         lookup_value: The value that we want to find the ID for.
-        table_name: Name of cross-walk table to use.
+        id_table: The source of truth for IDs.  Creates new row if new ID is
+            entered.
+        cw_table: Name of cross-walk table to use.
         text_column: Name of the column with the lookupable values.
         id_column: Name of the column with the IDs.
         id_type: What we're pulling, for use in error messages.
@@ -263,30 +273,53 @@ def _get_or_prompt_id(
 
     # Pull from remote on miss
     result = _get_id(
-        lookup_value, table_name, text_column, id_column, cache=True
+        lookup_value, cw_table, text_column, id_column, cache=True
     )
     if not result:
         result = _get_id(
-            lookup_value, table_name, text_column, id_column, cache=False
+            lookup_value, cw_table, text_column, id_column, cache=False
         )
 
     if result:
         return result
 
     if prompt_on_miss:
-        team_id = input(
+        new_cw_row = {text_column: lookup_value}  # For CW
+        new_id_row = {text_column: lookup_value}  # For id_table
+        id_table_needs_update = False
+
+        # Get ID from user
+        id = input(
             "Unknown text representing {}: {}.  Enter {} ID or 0 to fail:".format(
                 id_type, lookup_value, id_type
             )
         )
-        team_id = int(team_id)
-        if 1 <= team_id <= NFL_TEAMS:
-            add_row_to_table(
-                table_name, {text_column: lookup_value, id_column: team_id}
-            )
-            logging.info(f"Saving {id_type} {lookup_value} with ID {team_id}.")
-            return team_id
-        raise ValueError(f"Unknown {id_type} ID: {team_id}.")
+        id = int(id)
+        if id <= 0:
+            raise ValueError(f"Unknown {id_type} ID: {id}.")
+        new_cw_row[id_column] = id
+        new_id_row[id_column] = id
+
+        # TODO: Make function to pull individual rows.
+        # Try to find in ID table, and create new row on miss.
+        known_ids = pull_everything_from_table(id_table)[id_column]
+        if id not in known_ids:
+            logging.info(f"Unknown ID {id}.")
+            id_table_needs_update = True
+            for column in _get_columns_for_table(id_table):
+                if column in (id_column, text_column):
+                    continue
+                value = input(f"Enter value for {column}:")
+                new_id_row[column] = value
+
+        # Keep all writes at the end, so that a fail above will not write any.
+        add_row_to_table(cw_table, new_cw_row)
+        if id_table_needs_update:
+            add_row_to_table(id_table, new_id_row)
+        logging.info(f"Saving {id_type} {lookup_value} with ID {id}.")
+
+        # TODO: Return the entire row from the ID table.
+        return id
 
     raise ValueError(f"Unknown text representing team: {lookup_value}.")
 
@@ -295,7 +328,8 @@ def get_team_id(team_text: str, prompt_on_miss: bool = True) -> int:
     """Given a string that represents a team, find the ID."""
     return _get_or_prompt_id(
         lookup_value=team_text,
-        table_name=TEAM_CW_TABLE,
+        cw_table=TEAM_CW_TABLE,
+        id_table=TEAM_ID_TABLE,
         text_column=TEAM_TEXT_COLUMN,
         id_column=TEAM_ID_COLUMN,
         id_type="team",
@@ -307,9 +341,10 @@ def get_expert_id(expert_text: str, prompt_on_miss: bool = True) -> int:
     """Given a string that represents a team, find the ID."""
     return _get_or_prompt_id(
         lookup_value=expert_text,
-        table_name=EXPERT_CW_TABLE,
+        cw_table=EXPERT_CW_TABLE,
+        id_table=EXPERT_ID_TABLE,
         text_column=EXPERT_TEXT_COLUMN,
         id_column=EXPERT_ID_COLUMN,
-        id_type="team",
+        id_type="expert",
         prompt_on_miss=prompt_on_miss,
     )
