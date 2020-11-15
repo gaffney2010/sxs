@@ -207,7 +207,7 @@ def pull_everything_from_table(
 
 def _clean_text(txt: str) -> str:
     """Standard cleaning."""
-    return txt.lower().strip()
+    return txt.lower().replace(",", "").strip()
 
 
 def _get_id(

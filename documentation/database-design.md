@@ -44,7 +44,8 @@ expert table
 
 Columns:
   * expert_id
-  * name
+  * expert_type - "HUMAN", "MODEL"
+  * expert_text - The name
 
 expert_cw table
 ---------------
@@ -76,7 +77,6 @@ There is no primary key for this table.
 Columns:
 
   * expert_id
-  * expert_type - "HUMAN", "MODEL"
   * affiliate - e.g. ESPN, 538
   * prediction_date
   * fetched_date
@@ -91,3 +91,4 @@ Columns:
   * spread_amt - scenario 2
   * body - Text explaining their choice
   * link - URL to opinion
+  * exclude - Whether to exclude from data due to error or something
