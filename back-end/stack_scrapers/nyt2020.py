@@ -60,6 +60,13 @@ def strip_html(html: str) -> str:
     return soup.text.strip()
 
 
+def get_date_from_week_hometeam(week: int, hometeam: int) -> int:
+    results = SqlConn().sql_query("select game_date from game where home_team_id={} and week={}".format(hometeam, week))
+    assert(len(results) == 1)
+    assert(len(results[0]) == 1)
+    return results[0][0]
+
+
 @attr.s
 class GameInfo(object):
     """All info I can pull from the game block, with nothing processed."""
@@ -113,7 +120,7 @@ def read_games(text: str) -> Iterator[GameInfo]:
             logging.error(e)
 
 
-def read_article(text: str, link: str) -> None:
+def read_article(text: str, link: str, week: int) -> None:
     # Get the author
     match = re.search(r"nytimes.com/by/([^\"]+)\"", text)
     author = " ".join(match.group(1).split("-"))
@@ -175,6 +182,7 @@ def read_article(text: str, link: str) -> None:
                 "affiliate": "NYT",
                 "prediction_date": prediction_date,
                 "fetched_date": date,
+                "game_date": get_date_from_week_hometeam(week, home_team_id),
                 "home_team_id": home_team_id,
                 "away_team_id": away_team_id,
                 "predicted_winner_id_with_spread": predicted_winner_id,
@@ -192,6 +200,7 @@ def read_article(text: str, link: str) -> None:
 raw_html_cacher = TimedReadWriteCacher(directory=RAW_HTML_DIR, age_days=1)
 for url in ALL_URLS:
     logging.info(url)
+    week = url.split(".html")[0].split("-")[-1]
     with WebDriver() as driver:
         nfl_page_text = read_url_to_string(url, driver, cacher=raw_html_cacher)
-    read_article(nfl_page_text, url)
+    read_article(nfl_page_text, url, week)
