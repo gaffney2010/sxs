@@ -1,5 +1,5 @@
 import { Component, OnInit } from '@angular/core';
-import { GameDate } from './shared_interfaces';
+import { Game } from './shared_interfaces';
 
 @Component({
   selector: 'app-root',
@@ -7,15 +7,15 @@ import { GameDate } from './shared_interfaces';
   styleUrls: ['./app.component.css']
 })
 export class AppComponent implements OnInit {
-  title: string = 'front-end';
-  dates: Array<GameDate>
+  title: string = 'Stacks by Stacks';
+  games: Array<Game>;
 
   async ngOnInit() {
     var url = new URL('https://stacksbystacks.com/Sql.php');
-    url.searchParams.append('columns', 'game_date');
-    url.searchParams.append('table', 'game');
+    url.searchParams.append('columns', 'game_date,home_team_id,home_score,away_score,home_team_name,away_team_name,play_status');
+    url.searchParams.append('table', 'games_with_team_names');
     url.searchParams.append('order', 'game_date desc');
   	let response = await fetch(url.href);
-  	this.dates = await response.json();
+  	this.games = await response.json();
   }
 }

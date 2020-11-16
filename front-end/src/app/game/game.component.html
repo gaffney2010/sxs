@@ -1,5 +1,17 @@
-<span [ngStyle]="{ 'font-weight' : (isHomeWon) ? 'bold' : 'normal' }">{{game_data.away_team_name}}</span>&nbsp;&nbsp;
+<p class="game-header"><span [ngStyle]="{ 'font-weight' : (isHomeWon) ? 'bold' : 'normal' }">{{game_data.away_team_name}}</span>&nbsp;&nbsp;
 <span ng-show="scoresExist">{{game_data.away_score}}&nbsp;&nbsp;</span>
 <b>@</b>&nbsp;&nbsp;
 <span ng-show="scoresExist">{{game_data.home_score}}&nbsp;&nbsp;</span>
-<span [ngStyle]="{ 'font-weight' : (isAwayWon) ? 'bold' : 'normal'  }">{{game_data.home_team_name}}</span>
+<span [ngStyle]="{ 'font-weight' : (isAwayWon) ? 'bold' : 'normal'  }">{{game_data.home_team_name}}</span></p>
+<table>
+  <tr>
+    <td><span class="table-header">Expert</span></td>
+    <td><span class="table-header">Pick</span></td>
+    <td><span class="table-header">Spread</span></td>
+  </tr>
+  <tr *ngFor="let stack of stacks">
+    <td>{{stack.expert_name}} ({{stack.affiliate}})</td>
+    <td><a href="{{stack.link}}">{{stack.predicted_winner_name}}</a></td>
+    <td>{{spread(stack)}}</td>
+  </tr>
+</table>

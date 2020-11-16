@@ -1,0 +1,14 @@
+.game-header {
+  font-size: 18px;
+  text-decoration: underline;
+  text-decoration-color: #F59300;
+}
+.table-header {
+  font-weight: bold;
+}
+td {
+  padding-top: 3px;
+  padding-right: 4px;
+  padding-bottom: 0px;
+  padding-left: 4px;
+}

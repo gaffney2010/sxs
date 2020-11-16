@@ -6,7 +6,9 @@
 <div id="header3"></div>
 
 <div id="body-clear">
-<div id="box" *ngFor="let date of dates">
-  <app-game-date [game_date]="date.game_date"></app-game-date>
-</div>
+  <p>This is a site that aggregates expert picks for NFL games.</p>
+
+<div id="box-container" *ngFor="let game of games"><div id="box">
+  <app-game [game_data]="game"></app-game>
+</div></div>
 </div>
