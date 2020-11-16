@@ -300,7 +300,7 @@ def _get_or_prompt_id(
         new_cw_row[id_column] = id
         new_id_row[id_column] = id
 
-        # TODO: Make function to pull individual rows.
+        # TODO(#24): Make function to pull individual rows.
         # Try to find in ID table, and create new row on miss.
         known_ids = pull_everything_from_table(id_table)[id_column]
         if id not in known_ids:
@@ -318,7 +318,7 @@ def _get_or_prompt_id(
             add_row_to_table(id_table, new_id_row)
         logging.info(f"Saving {id_type} {lookup_value} with ID {id}.")
 
-        # TODO: Return the entire row from the ID table.
+        # TODO(#25): Return the entire row from the ID table.
         return id
 
     raise ValueError(f"Unknown text representing team: {lookup_value}.")
