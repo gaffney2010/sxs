@@ -13,3 +13,6 @@ data/*
 dist/*
 build/*
 .idea/*
+
+# Scratch work
+oneoffs/*

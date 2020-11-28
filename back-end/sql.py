@@ -10,6 +10,7 @@ if sys.platform != "darwin":
 import pandas as pd
 
 from local_config import SXS
+from shared_types import *
 from sql_config import DB_VERSION, SQL_CONFIG
 
 LOCAL_DB = f"{SXS}/back-end/data/local_db/{DB_VERSION}.db"
@@ -164,7 +165,7 @@ def add_row_to_table(
     # Execute SQL instruction
     conn.sql_execute(
         f"replace into {table_name} ({column_clause}) values ({value_clause});",
-        safe_mode=safe_mode
+        safe_mode=safe_mode,
     )
 
 
@@ -272,9 +273,7 @@ def _get_or_prompt_id(
     lookup_value = _clean_text(lookup_value)
 
     # Pull from remote on miss
-    result = _get_id(
-        lookup_value, cw_table, text_column, id_column, cache=True
-    )
+    result = _get_id(lookup_value, cw_table, text_column, id_column, cache=True)
     if not result:
         result = _get_id(
             lookup_value, cw_table, text_column, id_column, cache=False
@@ -348,3 +347,14 @@ def get_expert_id(expert_text: str, prompt_on_miss: bool = True) -> int:
         id_type="expert",
         prompt_on_miss=prompt_on_miss,
     )
+
+
+def get_date_from_week_hometeam(period: Period, hometeam: int) -> int:
+    results = SqlConn().sql_query(
+        "select game_date from game where home_team_id={} and season={} and week={}".format(
+            hometeam, period.year, period.week
+        )
+    )
+    assert len(results) == 1
+    assert len(results[0]) == 1
+    return results[0][0]

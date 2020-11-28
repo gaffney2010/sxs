@@ -2,34 +2,11 @@
 
 URL like https://www.cbssports.com/nfl/picks/experts/against-the-spread/10/
 """
-#########################
-# Logging logic
-SAFE_MODE = False
 
-from local_config import SXS
-LOG_FOLDER = f"{SXS}/back-end/logs/"
-
-from datetime import datetime
-
-now = datetime.now()
-date = now.year * 10000 + now.month * 100 + now.day
-
-import logging
-if SAFE_MODE:
-    # Print to screen
-    logging.basicConfig(format="%(asctime)s  %(levelname)s:\t%(module)s::%(funcName)s:%(lineno)d\t-\t%(message)s", level=logging.INFO)
-else:
-    # Print to file
-    logging.basicConfig(format="%(asctime)s  %(levelname)s:\t%(module)s::%(funcName)s:%(lineno)d\t-\t%(message)s", filename=LOG_FOLDER+str(date)+".log", level=logging.INFO)
-
-#########################
-
-import attr
 import re
 
 from bs4 import BeautifulSoup
 
-from shared_tools.scraper_tools import *
 from sql import *
 
 
@@ -45,8 +22,20 @@ class Game(object):
     home_team: str = attr.ib()
 
 
-def run_scraper(url: str, sample_page: str) -> str:
-    soup = BeautifulSoup(sample_page, features="html.parser")
+def getter(period: Period) -> str:
+    if period.year != 2020:
+        raise NotImplementedError
+    return f"https://www.cbssports.com/nfl/picks/experts/against-the-spread/{period.week}/"
+
+
+def scraper(
+    page_text: PageText,
+    url: Url,
+    run_date: Date,
+    period: Period,
+    safe_mode: SafeMode,
+) -> None:
+    soup = BeautifulSoup(page_text, features="html.parser")
     experts = list()
     for name_div in soup.findAll("div", class_="AuthorHeadshotAndName-name"):
         experts.append(_clean(name_div.text))
@@ -65,7 +54,7 @@ def run_scraper(url: str, sample_page: str) -> str:
         )
 
     for i, gi in enumerate(games):
-        blob = sample_page.split(gi.href)[1]
+        blob = page_text.split(gi.href)[1]
         if i < len(games) - 1:
             blob = blob.split(games[i + 1].href)[0]
 
@@ -98,6 +87,7 @@ def run_scraper(url: str, sample_page: str) -> str:
             new_row = {
                 "expert_id": get_expert_id(expert),
                 "affiliate": "CBS",
+                "fetched_date": run_date,
                 "game_date": gi.date,
                 "home_team_id": home_team_id,
                 "away_team_id": get_team_id(gi.away_team),
@@ -107,15 +97,4 @@ def run_scraper(url: str, sample_page: str) -> str:
                 "link": url,
                 "exclude": False,
             }
-            add_row_to_table("stack", new_row, safe_mode=SAFE_MODE)
-
-
-ALL_URLS = ["https://www.cbssports.com/nfl/picks/experts/against-the-spread/10/"]
-
-# TODO(#29): Share this logic too.
-raw_html_cacher = TimedReadWriteCacher(directory=RAW_HTML_DIR, age_days=1)
-for url in ALL_URLS:
-    logging.info(url)
-    with WebDriver() as driver:
-        page_text = read_url_to_string(url, driver, cacher=raw_html_cacher)
-    run_scraper(url, page_text)
+            add_row_to_table("stack", new_row, safe_mode=safe_mode)

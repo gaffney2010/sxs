@@ -5,51 +5,24 @@ URL like https://www.nytimes.com/2020/11/05/sports/football/nfl-picks-week-9.htm
 Can use NYT API to find articles.  I don't know how I will get past pay wall, I
 may need to log in on Firefox.
 """
-#########################
-# Logging logic
-SAFE_MODE = False
-
-from local_config import SXS
-LOG_FOLDER = f"{SXS}/back-end/logs/"
-
-from datetime import datetime
-
-now = datetime.now()
-date = now.year * 10000 + now.month * 100 + now.day
-
-import logging
-if SAFE_MODE:
-    # Print to screen
-    logging.basicConfig(format="%(asctime)s  %(levelname)s:\t%(module)s::%(funcName)s:%(lineno)d\t-\t%(message)s", level=logging.INFO)
-else:
-    # Print to file
-    logging.basicConfig(format="%(asctime)s  %(levelname)s:\t%(module)s::%(funcName)s:%(lineno)d\t-\t%(message)s", filename=LOG_FOLDER+str(date)+".log", level=logging.INFO)
-
-#########################
-
 import dateparser
 import datetime
 import re
 from typing import Iterator
 
-import attr
 from bs4 import BeautifulSoup
 
-from shared_tools.scraper_tools import *
 from sql import *
 
-ALL_URLS = [
-    "https://www.nytimes.com/2020/09/10/sports/football/nfl-picks-week-1.html",
-    "https://www.nytimes.com/2020/09/17/sports/football/nfl-picks-week-2.html",
-    "https://www.nytimes.com/2020/09/24/sports/football/nfl-picks-week-3.html",
-    "https://www.nytimes.com/2020/10/01/sports/football/nfl-picks-week-4.html",
-    "https://www.nytimes.com/2020/10/08/sports/football/nfl-picks-week-5.html",
-    "https://www.nytimes.com/2020/10/15/sports/football/nfl-picks-week-6.html",
-    "https://www.nytimes.com/2020/10/22/sports/football/nfl-picks-week-7.html",
-    "https://www.nytimes.com/2020/10/29/sports/football/nfl-picks-week-8.html",
-    "https://www.nytimes.com/2020/11/05/sports/football/nfl-picks-week-9.html",
-    "https://www.nytimes.com/2020/11/12/sports/football/nfl-picks-week-10.html",
-]
+
+def getter(period: Period) -> str:
+    if period.year != 2020:
+        raise NotImplementedError
+    week_zero = datetime.date(2020, 9, 3)
+    week_n = week_zero + datetime.timedelta(weeks=period.week)
+    return "https://www.nytimes.com/{}/{}/{}/sports/football/nfl-picks-week-{}.html".format(
+        week_n.year, week_n.month, week_n.day, period.week
+    )
 
 
 def strip_html(html: str) -> str:
@@ -58,13 +31,6 @@ def strip_html(html: str) -> str:
         html = html.replace("  ", " ")
     soup = BeautifulSoup(html, features="html.parser")
     return soup.text.strip()
-
-
-def get_date_from_week_hometeam(week: int, hometeam: int) -> int:
-    results = SqlConn().sql_query("select game_date from game where home_team_id={} and week={}".format(hometeam, week))
-    assert(len(results) == 1)
-    assert(len(results[0]) == 1)
-    return results[0][0]
 
 
 @attr.s
@@ -106,9 +72,13 @@ def read_games(text: str) -> Iterator[GameInfo]:
             away_team, home_team = teams.split(" at ")
 
             # Delete the first two and the last paragraph of the game_block
-            body = strip_html(game_block.split("</em></p>")[-1].split("<strong")[0])
+            body = strip_html(
+                game_block.split("</em></p>")[-1].split("<strong")[0]
+            )
 
-            pick_clause = game_block.split("</strong>")[-1].split("</p>")[0].strip()
+            pick_clause = (
+                game_block.split("</strong>")[-1].split("</p>")[0].strip()
+            )
 
             yield GameInfo(
                 home_team=home_team,
@@ -120,7 +90,13 @@ def read_games(text: str) -> Iterator[GameInfo]:
             logging.error(e)
 
 
-def read_article(text: str, link: str, week: int) -> None:
+def scraper(
+    text: PageText,
+    link: Url,
+    run_date: Date,
+    period: Period,
+    safe_mode: SafeMode,
+) -> None:
     # Get the author
     match = re.search(r"nytimes.com/by/([^\"]+)\"", text)
     author = " ".join(match.group(1).split("-"))
@@ -133,11 +109,15 @@ def read_article(text: str, link: str, week: int) -> None:
     # Get latest date
     if text.find("Updated <!-- -->") != -1:
         # Look for "Updated <!-- -->Nov. 8, 2020</span>"
-        pred = dateparser.parse(text.split("Updated <!-- -->")[1].split("</span>")[0])
+        pred = dateparser.parse(
+            text.split("Updated <!-- -->")[1].split("</span>")[0]
+        )
         prediction_date = pred.year * 10000 + pred.month * 100 + pred.day
     elif text.find("Published <!-- -->") != -1:
         # Look for "Published <!-- -->Nov. 8, 2020</span>"
-        pred = dateparser.parse(text.split("Published <!-- -->")[1].split("</span>")[0])
+        pred = dateparser.parse(
+            text.split("Published <!-- -->")[1].split("</span>")[0]
+        )
         prediction_date = pred.year * 10000 + pred.month * 100 + pred.day
     else:
         # Look for any time tag
@@ -157,7 +137,9 @@ def read_article(text: str, link: str, week: int) -> None:
             ):
                 raise ValueError(
                     "Pick {} doesn't match either team {} or {}".format(
-                        game.pick_clause.split()[0], game.home_team, game.away_team
+                        game.pick_clause.split()[0],
+                        game.home_team,
+                        game.away_team,
                     )
                 )
 
@@ -181,8 +163,8 @@ def read_article(text: str, link: str, week: int) -> None:
                 "expert_id": expert_id,
                 "affiliate": "NYT",
                 "prediction_date": prediction_date,
-                "fetched_date": date,
-                "game_date": get_date_from_week_hometeam(week, home_team_id),
+                "fetched_date": run_date,
+                "game_date": get_date_from_week_hometeam(period, home_team_id),
                 "home_team_id": home_team_id,
                 "away_team_id": away_team_id,
                 "predicted_winner_id_with_spread": predicted_winner_id,
@@ -192,15 +174,6 @@ def read_article(text: str, link: str, week: int) -> None:
                 "link": link,
                 "exclude": False,
             }
-            add_row_to_table("stack", new_row, safe_mode=SAFE_MODE)
+            add_row_to_table("stack", new_row, safe_mode=safe_mode)
         except Exception as e:
             logging.error(e)
-
-
-raw_html_cacher = TimedReadWriteCacher(directory=RAW_HTML_DIR, age_days=1)
-for url in ALL_URLS:
-    logging.info(url)
-    week = url.split(".html")[0].split("-")[-1]
-    with WebDriver() as driver:
-        nfl_page_text = read_url_to_string(url, driver, cacher=raw_html_cacher)
-    read_article(nfl_page_text, url, week)
