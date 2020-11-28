@@ -1,4 +1,4 @@
- #header1 {
+#header1 {
   position: absolute;
   top: 8;
   left: 0;
@@ -22,14 +22,21 @@
   width: 100%;
   background: #FFFFFF;
 }
-#box {
-  border-style: solid;
-  border-color: #0A0A0A;
-  background: #FFFFFF;
+nav a {
+  padding: 5px 10px;
+  text-decoration: none;
+  margin-top: 10px;
+  display: inline-block;
+  background-color: #eee;
+  border-radius: 4px;
 }
-#box-container {
-  padding-top: 5px;
-  padding-right: 5px;
-  padding-bottom: 2px;
-  padding-left: 3px;
+nav a:visited, a:link {
+  color: #334953;
+}
+nav a:hover {
+  color: #039be5;
+  background-color: #CFD8DC;
+}
+nav a.active {
+  color: #039be5;
 }
