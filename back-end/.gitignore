@@ -1,5 +1,5 @@
 # Contains password
-sql_config.py
+configs.py
 
 # Machine-specific
 local_config.py

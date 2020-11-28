@@ -6,4 +6,5 @@ numpy
 pandas
 pyinstaller
 retrying
+requests
 selenium
