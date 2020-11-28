@@ -10,8 +10,7 @@ if sys.platform != "darwin":
 import pandas as pd
 
 from local_config import SXS
-from shared_types import *
-from sql_config import DB_VERSION, SQL_CONFIG
+from configs import DB_VERSION, SQL_CONFIG
 
 LOCAL_DB = f"{SXS}/back-end/data/local_db/{DB_VERSION}.db"
 

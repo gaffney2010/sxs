@@ -2,13 +2,11 @@
 <img src="stacks.png">
 </div>
 
-<div id="header2"></div>
 <div id="header3"></div>
 
 <div id="body-clear">
-  <p>This is a site that aggregates expert picks for NFL games.</p>
-
-<div id="box-container" *ngFor="let game of games"><div id="box">
-  <app-game [game_data]="game"></app-game>
-</div></div>
+<nav>
+  <a routerLink="/stacks">Games</a>
+  <a routerLink="/about">About</a>
+</nav>
 </div>
