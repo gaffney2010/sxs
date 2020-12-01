@@ -1,7 +1,10 @@
-import logging  # Must be first
-logging.basicConfig(format="%(asctime)s  %(levelname)s:\t%(module)s::%(funcName)s:%(lineno)d\t-\t%(message)s", level=logging.INFO)
+################################################################################
+# Logging logic, must come first
+SAFE_MODE = False
+from shared_tools.logger import configure_logging
+configure_logging(SAFE_MODE)
+################################################################################
 
-import argparse
 from bs4 import BeautifulSoup
 
 from shared_tools.date_reader import *

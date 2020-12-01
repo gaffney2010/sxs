@@ -1,24 +1,8 @@
-#########################
-# Logging logic
+################################################################################
+# Logging logic, must come first
 SAFE_MODE = False
-
-from local_config import SXS
-LOG_FOLDER = f"{SXS}/back-end/logs/"
-
-from datetime import datetime
-
-now = datetime.now()
-today = now.year * 10000 + now.month * 100 + now.day
-
-import logging
-if SAFE_MODE:
-    # Print to screen
-    logging.basicConfig(format="%(asctime)s  %(levelname)s:\t%(module)s::%(funcName)s:%(lineno)d\t-\t%(message)s", level=logging.INFO)
-else:
-    # Print to file
-    logging.basicConfig(format="%(asctime)s  %(levelname)s:\t%(module)s::%(funcName)s:%(lineno)d\t-\t%(message)s", filename=LOG_FOLDER+str(today)+".log", level=logging.INFO)
-
-
+from shared_tools.logger import configure_logging
+configure_logging(SAFE_MODE)
 ################################################################################
 
 from typing import List

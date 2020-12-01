@@ -1,3 +1,10 @@
+################################################################################
+# Logging logic, must come first
+SAFE_MODE = True
+from shared_tools.logger import configure_logging
+configure_logging(SAFE_MODE)
+################################################################################
+
 import json
 import os
 from datetime import datetime
