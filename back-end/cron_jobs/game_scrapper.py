@@ -14,6 +14,9 @@ configure_logging(SAFE_MODE)
 
 from nfl_games import *
 
+logging.info("==============")
+logging.info("RUN GAMES SCRAPER")
+
 now = datetime.now()
 iso_year, iso_week = now.isocalendar()[0], now.isocalendar()[1]
 logging.info(f"RUNNING ON: {iso_year}-{iso_week}")

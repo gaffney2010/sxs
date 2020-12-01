@@ -3,7 +3,7 @@ import logging
 
 from local_config import SXS
 
-LOG_DIR = f"{SXS}/back-end/logs"
+LOG_DIR = f"{SXS}/back-end/logs/"
 
 
 def configure_logging(safe_mode: bool) -> None:
