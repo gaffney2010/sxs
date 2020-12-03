@@ -19,6 +19,7 @@ $columns = safeGet($mysqli, 'columns');
 $table = safeGet($mysqli, 'table');
 $where_clause = safeGet($mysqli, 'where');
 $order_clause = safeGet($mysqli, 'order');
+$limit = safeGet($mysqli, 'limit');
 
 if (empty($columns) || empty($table)) {
   die("columns and table must be passed.");
@@ -29,11 +30,14 @@ if (empty($where_clause)) {
 if (empty($order_clause)) {
   $order_clause = "1";
 }
+if (empty($limit)) {
+  $limit = "9999";
+}
 
 // create SQL based on HTTP method
 switch ($method) {
   case 'GET':
-    $result = $mysqli->query("select distinct $columns from $table where $where_clause order by $order_clause;") or die($mysqli->error);
+    $result = $mysqli->query("select distinct $columns from $table where $where_clause order by $order_clause limit $limit;") or die($mysqli->error);
     break;
   // These others aren't supported yet.
   case 'PUT':

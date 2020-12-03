@@ -5,7 +5,7 @@ from shared_tools.logger import configure_logging
 configure_logging(SAFE_MODE)
 ################################################################################
 
-from typing import List
+from typing import Callable, List
 
 from shared_tools.scraper_tools import *
 from shared_types import *
@@ -30,7 +30,9 @@ nyt_scraper = Scraper(getter=nyt2020.getter, scraper=nyt2020.scraper)
 
 def run_scrapers(scrapers: List[Scraper], periods: List[Period]) -> None:
     global SAFE_MODE
-    global today
+
+    now = datetime.now()
+    today = now.year * 10000 + now.month * 100 + now.day
 
     for scraper in scrapers:
         for period in periods:
