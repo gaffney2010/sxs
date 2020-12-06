@@ -20,7 +20,7 @@ def getter(period: Period) -> str:
         raise NotImplementedError
     week_zero = datetime.date(2020, 9, 3)
     week_n = week_zero + datetime.timedelta(weeks=period.week)
-    return "https://www.nytimes.com/{}/{}/{}/sports/football/nfl-picks-week-{}.html".format(
+    return "https://www.nytimes.com/{}/{:02d}/{:02d}/sports/football/nfl-picks-week-{}.html".format(
         week_n.year, week_n.month, week_n.day, period.week
     )
 
@@ -97,6 +97,8 @@ def scraper(
     period: Period,
     safe_mode: SafeMode,
 ) -> None:
+    logging.info(f"Running NYT on URL: {link}")
+
     # Get the author
     match = re.search(r"nytimes.com/by/([^\"]+)\"", text)
     author = " ".join(match.group(1).split("-"))

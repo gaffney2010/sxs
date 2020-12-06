@@ -35,6 +35,7 @@ def scraper(
     period: Period,
     safe_mode: SafeMode,
 ) -> None:
+    logging.info(f"Running CBS on URL: {url}")
     soup = BeautifulSoup(page_text, features="html.parser")
     experts = list()
     for name_div in soup.findAll("div", class_="AuthorHeadshotAndName-name"):

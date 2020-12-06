@@ -1,4 +1,6 @@
 """ These are some functions to aid in the scraping of a general webpage."""
+from typing import Optional
+
 import retrying
 import selenium.webdriver
 

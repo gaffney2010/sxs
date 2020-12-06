@@ -1,10 +1,3 @@
-################################################################################
-# Logging logic, must come first
-SAFE_MODE = False
-from shared_tools.logger import configure_logging
-configure_logging(SAFE_MODE)
-################################################################################
-
 from typing import Callable, List
 
 from shared_tools.scraper_tools import *
@@ -25,12 +18,15 @@ cbs_scraper = Scraper(getter=cbs2020.getter, scraper=cbs2020.scraper)
 from stack_scrapers import nyt2020
 nyt_scraper = Scraper(getter=nyt2020.getter, scraper=nyt2020.scraper)
 
+ALL_SCRAPERS = [
+    cbs_scraper,
+    nyt_scraper,
+]
+
 
 ################################################################################
 
-def run_scrapers(scrapers: List[Scraper], periods: List[Period]) -> None:
-    global SAFE_MODE
-
+def run_scrapers(scrapers: List[Scraper], periods: List[Period], safe_mode: bool = True) -> None:
     now = datetime.now()
     today = now.year * 10000 + now.month * 100 + now.day
 
@@ -41,5 +37,9 @@ def run_scrapers(scrapers: List[Scraper], periods: List[Period]) -> None:
             logging.info(url)
             with WebDriver() as driver:
                 page_text = read_url_to_string(url, driver, cacher=raw_html_cacher)
-            scraper.scraper(page_text, url, today, period, SAFE_MODE)
+            scraper.scraper(page_text, url, today, period, safe_mode)
 
+
+def run_all_known_scrapers_for_period(period: Period, safe_mode: bool) -> None:
+    global ALL_SCRAPERS
+    run_scrapers(ALL_SCRAPERS, [period], safe_mode=safe_mode)
