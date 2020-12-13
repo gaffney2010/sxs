@@ -1,0 +1,18 @@
+<h2>{{expert_name}}</h2>
+
+<table>
+  <tr>
+    <td><span class="table-header">Date</span></td>
+    <td><span class="table-header">Game</span></td>
+    <td><span class="table-header">Pick</span></td>
+  </tr>
+  <tr *ngFor="let stack of stacks">
+    <td>{{stack.game_date}}</td>
+    <td><p class="game-header"><span [ngStyle]="{ 'font-weight' : (isHomeWon(stack)) ? 'bold' : 'normal' }">{{stack.away_team_name}}</span>&nbsp;&nbsp;
+      <span ng-show="scoresExist">{{stack.away_score}}&nbsp;&nbsp;</span>
+      <b>@</b>&nbsp;&nbsp;
+      <span ng-show="scoresExist">{{stack.home_score}}&nbsp;&nbsp;</span>
+      <span [ngStyle]="{ 'font-weight' : (isAwayWon(stack)) ? 'bold' : 'normal'  }">{{stack.home_team_name}}</span></p></td>
+    <td><a href="{{stack.link}}">{{stack.predicted_winner_name}}</a> ({{spread(stack)}})</td>
+  </tr>
+</table>
