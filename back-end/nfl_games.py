@@ -1,7 +1,10 @@
-import logging  # Must be first
-logging.basicConfig(format="%(asctime)s  %(levelname)s:\t%(module)s::%(funcName)s:%(lineno)d\t-\t%(message)s", level=logging.INFO)
+################################################################################
+# Logging logic, must come first
+SAFE_MODE = False
+from shared_tools.logger import configure_logging
+configure_logging(SAFE_MODE)
+################################################################################
 
-import argparse
 from bs4 import BeautifulSoup
 
 from shared_tools.date_reader import *
@@ -62,14 +65,3 @@ def pull_week(season: int, week: int, prompt_on_miss: bool = True) -> None:
 
             logging.debug(new_game)
             add_row_to_table("game", new_game)
-
-
-for i in range(2, 9):
-    pull_week(2020, i)
-# if __name__ == "__main__":
-#     parser = argparse.ArgumentParser(description="Games scraper")
-#     parser.add_argument("--season", required=True)
-#     parser.add_argument("--week", required=True)
-#     args = parser.parse_args()
-#
-#     pull_week(args.season, args.week)

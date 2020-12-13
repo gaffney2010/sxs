@@ -1,1 +1,1 @@
-SXS = "/Users/gaffneytj/sxs"
+SXS = "/home/gaffney/stacks-by-stacks"

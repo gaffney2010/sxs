@@ -1,9 +1,11 @@
--- drop table expert;
+drop table odd;
 create table if not exists odd (
-    game_id int, -- foreign key to game
     game_date int,
-    hour int,
-    odd_type varchar(255), -- enum {"H2H", "SPREAD"}
-    avg float,
-    primary key (game_id, game_date, hour)
+    home_team_id int,
+    pull_date int,
+    pull_hour int,
+    odds_type varchar(255), -- enum {"H2H", "SPREAD"},
+    odds_home float,
+    odds_away float,
+    primary key (game_date, home_team_id, pull_date, pull_hour, odds_type)
 );

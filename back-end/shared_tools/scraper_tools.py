@@ -1,10 +1,11 @@
 """ These are some functions to aid in the scraping of a general webpage."""
-import functools
+from typing import Optional
 
 import retrying
 import selenium.webdriver
 
 from shared_tools.logger import *
+from shared_tools.cache import *
 
 DRIVER_DELAY_SEC = 3
 RAW_HTML_DIR = f"{SXS}/back-end/data/raw_html"

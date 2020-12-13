@@ -1,0 +1,12 @@
+<h2>Experts list:</h2>
+
+<table>
+  <tr>
+    <td><span class="table-header">Expert</span></td>
+    <td><span class="table-header">Score</span></td>
+  </tr>
+  <tr *ngFor="let expert of experts">
+    <td><a routerLink="/expert/{{expert.expert_id}}">{{expert.expert_text}}</a></td>
+    <td>{{expert.score}}</td>
+  </tr>
+</table>
