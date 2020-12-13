@@ -287,11 +287,12 @@ def _get_or_prompt_id(
         new_cw_row = {text_column: lookup_value}  # For CW
         new_id_row = {text_column: lookup_value}  # For id_table
         id_table_needs_update = False
+        known_ids = pull_everything_from_table(id_table)[id_column]
 
         # Get ID from user
         id = input(
-            "Unknown text representing {}: {}.  Enter {} ID or 0 to fail:".format(
-                id_type, lookup_value, id_type
+            "Unknown text representing {}: {}.  Enter {} ID or 0 to fail or {} for new ID:".format(
+                id_type, lookup_value, id_type, max(known_ids) + 1
             )
         )
         id = int(id)
@@ -300,9 +301,7 @@ def _get_or_prompt_id(
         new_cw_row[id_column] = id
         new_id_row[id_column] = id
 
-        # TODO(#24): Make function to pull individual rows.
         # Try to find in ID table, and create new row on miss.
-        known_ids = pull_everything_from_table(id_table)[id_column]
         if id not in known_ids:
             logging.info(f"Unknown ID {id}.")
             id_table_needs_update = True
