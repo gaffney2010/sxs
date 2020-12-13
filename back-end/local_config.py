@@ -1,1 +1,0 @@
-SXS = "/home/gaffney/stacks-by-stacks"
