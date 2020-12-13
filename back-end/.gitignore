@@ -1,8 +1,5 @@
-# Contains password
+# Contains password and machine-specific
 configs.py
-
-# Machine-specific
-local_config.py
 
 test_data/*
 logs/*
