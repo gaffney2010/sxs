@@ -9,8 +9,7 @@ if sys.platform != "darwin":
     import MySQLdb
 import pandas as pd
 
-from configs import DB_VERSION, SQL_CONFIG
-from local_config import SXS
+from configs import DB_VERSION, SQL_CONFIG, SXS
 from shared_types import *
 
 LOCAL_DB = f"{SXS}/back-end/data/local_db/{DB_VERSION}.db"

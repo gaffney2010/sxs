@@ -1,7 +1,7 @@
 from datetime import datetime
 import logging
 
-from local_config import SXS
+from configs import SXS
 
 LOG_DIR = f"{SXS}/back-end/logs/"
 

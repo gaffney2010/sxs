@@ -17,7 +17,7 @@ import logging
 
 import shutil
 
-from local_config import SXS
+from configs import SXS
 
 
 logging.info("==============")
