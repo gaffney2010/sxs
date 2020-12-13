@@ -7,6 +7,7 @@ import re
 
 from bs4 import BeautifulSoup
 
+from shared_tools.stack_tools import spread_favorite_amt
 from sql import *
 
 
@@ -70,20 +71,7 @@ def scraper(
             home_team_id = get_team_id(gi.home_team)
             away_team_id = get_team_id(gi.away_team)
 
-            # TODO: Share this functionality.
-            if pick_clause.find("-") != -1:
-                spread_favorite = predicted_winner_id
-                spread_amt = float(pick_clause.split("-")[-1])
-            elif pick_clause.find("+") != -1:
-                # Set spread_favorite to the non-predicted-winner
-                spread_favorite = (
-                    away_team_id
-                    if predicted_winner_id == home_team_id
-                    else home_team_id
-                )
-                spread_amt = float(pick_clause.split("+")[-1])
-            else:
-                raise Exception(f"Malformed pick_clause: {pick_clause}")
+            spread_favorite, spread_amt = spread_favorite_amt(pick_clause, predicted_winner_id, away_team_id, home_team_id)
 
             new_row = {
                 "expert_id": get_expert_id(expert),

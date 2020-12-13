@@ -12,6 +12,7 @@ from typing import Iterator
 
 from bs4 import BeautifulSoup
 
+from shared_tools.stack_tools import spread_favorite_amt
 from sql import *
 
 
@@ -145,21 +146,7 @@ def scraper(
                     )
                 )
 
-            if game.pick_clause.find("-") != -1:
-                spread_favorite = predicted_winner_id
-                spread_amt = float(game.pick_clause.split("-")[-1])
-            elif game.pick_clause.find("+") != -1:
-                # Set spread_favorite to the non-predicted-winner
-                spread_favorite = (
-                    away_team_id
-                    if predicted_winner_id == home_team_id
-                    else home_team_id
-                )
-                spread_amt = float(game.pick_clause.split("+")[-1])
-            else:
-                raise ValueError(
-                    f"Unexpected, pick clause malformed: {game.pick_clause}"
-                )
+            spread_favorite, spread_amt = spread_favorite_amt(game.pick_clause, predicted_winner_id, away_team_id, home_team_id)
 
             new_row = {
                 "expert_id": expert_id,
