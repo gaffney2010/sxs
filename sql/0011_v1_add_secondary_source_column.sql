@@ -1,0 +1,1 @@
+alter table stack add secondary_source boolean;
