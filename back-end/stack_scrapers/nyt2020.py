@@ -7,7 +7,7 @@ may need to log in on Firefox.
 """
 import datetime
 import re
-from typing import Iterator
+from typing import Iterator, List
 
 from bs4 import BeautifulSoup
 
@@ -15,14 +15,14 @@ from shared_tools import stack_tools
 from sql import *
 
 
-def getter(period: Period) -> str:
+def getter(period: Period) -> List[Url]:
     if period.year != 2020:
         raise NotImplementedError
     week_zero = datetime.date(2020, 9, 3)
     week_n = week_zero + datetime.timedelta(weeks=period.week)
-    return "https://www.nytimes.com/{}/{:02d}/{:02d}/sports/football/nfl-picks-week-{}.html".format(
+    return ["https://www.nytimes.com/{}/{:02d}/{:02d}/sports/football/nfl-picks-week-{}.html".format(
         week_n.year, week_n.month, week_n.day, period.week
-    )
+    )]
 
 
 def strip_html(html: str) -> str:

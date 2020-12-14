@@ -8,6 +8,7 @@ import re
 from bs4 import BeautifulSoup
 
 from shared_tools.stack_tools import spread_favorite_amt
+from shared_types import *
 from sql import *
 
 
@@ -23,10 +24,10 @@ class Game(object):
     home_team: str = attr.ib()
 
 
-def getter(period: Period) -> str:
+def getter(period: Period) -> List[Url]:
     if period.year != 2020:
         raise NotImplementedError
-    return f"https://www.cbssports.com/nfl/picks/experts/against-the-spread/{period.week}/"
+    return [f"https://www.cbssports.com/nfl/picks/experts/against-the-spread/{period.week}/"]
 
 
 def scraper(

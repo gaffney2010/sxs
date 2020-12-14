@@ -3,6 +3,7 @@ https://lasvegassun.com/blogs/talking-points/2020/dec/03/vegas-odds-nfl-picks-ag
 """
 
 import datetime
+from typing import List
 
 import sql
 from shared_tools import stack_tools
@@ -36,14 +37,14 @@ def _three_letter_month(month: int) -> str:
         return "dec"
 
 
-def getter(period: Period) -> str:
+def getter(period: Period) -> List[Url]:
     if period.year != 2020:
         raise NotImplementedError
     week_zero = datetime.date(2020, 9, 3)
     week_n = week_zero + datetime.timedelta(weeks=period.week)
-    return "http://lasvegassun.com/blogs/talking-points/{}/{}/{:02d}/vegas-odds-nfl-picks-against-spread-betting-week{}/".format(
+    return ["http://lasvegassun.com/blogs/talking-points/{}/{}/{:02d}/vegas-odds-nfl-picks-against-spread-betting-week{}/".format(
         week_n.year, _three_letter_month(week_n.month), week_n.day, period.week
-    )
+    )]
 
 
 def scraper(
