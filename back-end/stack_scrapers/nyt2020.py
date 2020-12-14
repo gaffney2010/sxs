@@ -5,14 +5,13 @@ URL like https://www.nytimes.com/2020/11/05/sports/football/nfl-picks-week-9.htm
 Can use NYT API to find articles.  I don't know how I will get past pay wall, I
 may need to log in on Firefox.
 """
-import dateparser
 import datetime
 import re
 from typing import Iterator
 
 from bs4 import BeautifulSoup
 
-from shared_tools.stack_tools import spread_favorite_amt
+from shared_tools import stack_tools
 from sql import *
 
 
@@ -92,11 +91,11 @@ def read_games(text: str) -> Iterator[GameInfo]:
 
 
 def scraper(
-    text: PageText,
-    link: Url,
-    run_date: Date,
-    period: Period,
-    safe_mode: SafeMode,
+        text: PageText,
+        link: Url,
+        run_date: Date,
+        period: Period,
+        safe_mode: SafeMode,
 ) -> None:
     logging.info(f"Running NYT on URL: {link}")
 
@@ -112,22 +111,17 @@ def scraper(
     # Get latest date
     if text.find("Updated <!-- -->") != -1:
         # Look for "Updated <!-- -->Nov. 8, 2020</span>"
-        pred = dateparser.parse(
-            text.split("Updated <!-- -->")[1].split("</span>")[0]
-        )
-        prediction_date = pred.year * 10000 + pred.month * 100 + pred.day
+        prediction_date = stack_tools.full_parse_date(
+            text.split("Updated <!-- -->")[1].split("</span>")[0])
     elif text.find("Published <!-- -->") != -1:
         # Look for "Published <!-- -->Nov. 8, 2020</span>"
-        pred = dateparser.parse(
-            text.split("Published <!-- -->")[1].split("</span>")[0]
-        )
-        prediction_date = pred.year * 10000 + pred.month * 100 + pred.day
+        prediction_date = stack_tools.full_parse_date(
+            text.split("Published <!-- -->")[1].split("</span>")[0])
     else:
         # Look for any time tag
         time_clause = text.split("<time")[1].split("</time")[0]
         time_clause = time_clause.split("</span>")[0].split(">")[-1]
-        pred = dateparser.parse(time_clause)
-        prediction_date = pred.year * 10000 + pred.month * 100 + pred.day
+        prediction_date = stack_tools.full_parse_date(time_clause)
 
     for game in read_games(text):
         try:
@@ -135,8 +129,8 @@ def scraper(
             away_team_id = get_team_id(game.away_team)
             predicted_winner_id = get_team_id(game.pick_clause.split()[0])
             if (
-                predicted_winner_id != home_team_id
-                and predicted_winner_id != away_team_id
+                    predicted_winner_id != home_team_id
+                    and predicted_winner_id != away_team_id
             ):
                 raise ValueError(
                     "Pick {} doesn't match either team {} or {}".format(
@@ -146,7 +140,9 @@ def scraper(
                     )
                 )
 
-            spread_favorite, spread_amt = spread_favorite_amt(game.pick_clause, predicted_winner_id, away_team_id, home_team_id)
+            spread_favorite, spread_amt = stack_tools.spread_favorite_amt(
+                game.pick_clause, predicted_winner_id, away_team_id,
+                home_team_id)
 
             new_row = {
                 "expert_id": expert_id,

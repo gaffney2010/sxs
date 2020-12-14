@@ -1,5 +1,10 @@
 from typing import Tuple
 
+import dateparser
+
+from shared_types import Date
+
+
 def spread_favorite_amt(pick_clause, predicted_winner_id, away_team_id, home_team_id) -> Tuple[int, int]:
     if pick_clause.find("-") != -1:
         spread_favorite = predicted_winner_id
@@ -20,3 +25,9 @@ def spread_favorite_amt(pick_clause, predicted_winner_id, away_team_id, home_tea
             f"Unexpected, pick clause malformed: {game.pick_clause}"
         )
     return spread_favorite, spread_amt
+
+
+def full_parse_date(text: str) -> Date:
+    """Runs date parser, AND converts to Date."""
+    pred = dateparser.parse(text)
+    prediction_date = pred.year * 10000 + pred.month * 100 + pred.day
