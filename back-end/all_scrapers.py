@@ -30,10 +30,16 @@ from stack_scrapers import lvsuntimes2020
 lvsuntimes_scraper = Scraper(name="LVST", getter=lvsuntimes2020.getter,
                              scraper=lvsuntimes2020.scraper)
 
+from stack_scrapers import cfn2020
+
+cfn_scraper = Scraper(name="CFN", getter=cfn2020.getter,
+                      scraper=cfn2020.scraper)
+
 ALL_SCRAPERS = [
     cbs_scraper,
     nyt_scraper,
     lvsuntimes_scraper,
+    cfn_scraper,
 ]
 
 

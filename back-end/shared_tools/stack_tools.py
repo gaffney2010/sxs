@@ -30,4 +30,4 @@ def spread_favorite_amt(pick_clause, predicted_winner_id, away_team_id, home_tea
 def full_parse_date(text: str) -> Date:
     """Runs date parser, AND converts to Date."""
     pred = dateparser.parse(text)
-    prediction_date = pred.year * 10000 + pred.month * 100 + pred.day
+    return pred.year * 10000 + pred.month * 100 + pred.day

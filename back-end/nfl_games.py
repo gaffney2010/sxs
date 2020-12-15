@@ -7,8 +7,8 @@ configure_logging(SAFE_MODE)
 
 from bs4 import BeautifulSoup
 
-from shared_tools.date_reader import *
 from shared_tools.scraper_tools import *
+from shared_tools.stack_tools import full_parse_date
 from sql import *
 
 NFL_PAGE = "https://www.nfl.com/schedules/{}/REG{}/"
@@ -25,8 +25,7 @@ def pull_week(season: int, week: int, prompt_on_miss: bool = True) -> None:
     main_section = nfl_page.find("div", {"data-require": "modules/scheduleByWeek"})
     for day_section in main_section.select("div[class^=d3-l-col]"):
         day_header = day_section.find("h2").contents[0]
-        date = read_date(day_header)
-        date_int = date.year*10000 + date.month*100 + date.day
+        date_int = full_parse_date(day_header)
         for div in day_section.select("div[class^=nfl-c-matchup-strip\ ]"):
             new_game = dict()
 
