@@ -1,3 +1,8 @@
+################################################################################
+##
+## Need to update for NHL
+##
+
 import json
 import os
 from datetime import datetime

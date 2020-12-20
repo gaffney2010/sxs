@@ -168,10 +168,37 @@ def add_row_to_table(
     )
 
 
+def query_df(query: str, conn=None) -> pd.DataFrame:
+    """Runs the query, and returns in a dataframe format.
+
+    Args:
+        query: Sql query to run for results.
+        conn: If set use for reads.  Otherwise use default.
+
+    Returns:
+        A dataframe with the data.
+    """
+    if conn is None:
+        conn = SqlConn()
+
+    # Get data
+    data = list()
+    for result in conn.sql_query(query):
+        assert len(conn.columns) == len(result)
+        data.append({k: v for k, v in zip(conn.columns, result)})
+
+    # Convert to a pandas dataframe
+    if len(data) == 0:
+        # Handle the empty case special.
+        return pd.DataFrame(columns=conn.columns)
+    else:
+        return pd.DataFrame(data)
+
+
 def pull_everything_from_table(
     table_name: str, read_from_cache: bool = True, conn=None
 ) -> pd.DataFrame:
-    """Pulls the entire thing at once.
+    """Same as query_df, but with table_name argument and caching.
 
     Args:
         table_name: The table to read
@@ -181,25 +208,11 @@ def pull_everything_from_table(
     Returns:
         A dataframe with the data.
     """
-    if conn is None:
-        conn = SqlConn()
-
     if read_from_cache:
         if table_name in table_cache():
             return table_cache()[table_name]
 
-    # Get data
-    data = list()
-    for result in conn.sql_query(f"select * from {table_name};"):
-        assert len(conn.columns) == len(result)
-        data.append({k: v for k, v in zip(conn.columns, result)})
-
-    # Convert to a pandas dataframe
-    if len(data) == 0:
-        # Handle the empty case special.
-        result = pd.DataFrame(columns=conn.columns)
-    else:
-        result = pd.DataFrame(data)
+    result = query_df(f"select * from {table_name};", conn=conn)
 
     table_cache()[table_name] = result
     return result
