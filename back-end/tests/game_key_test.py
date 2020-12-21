@@ -1,7 +1,7 @@
 from collections import defaultdict
 import unittest
 
-from shared_tools import game_key
+from tools import game_key
 
 
 class GameKeyTest(unittest.TestCase):

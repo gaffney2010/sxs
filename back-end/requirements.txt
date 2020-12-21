@@ -1,6 +1,7 @@
 attrs
 bs4
 dateparser
+html5lib # For pd.read_html
 mysqlclient # brew install mysql??
 numpy
 pandas

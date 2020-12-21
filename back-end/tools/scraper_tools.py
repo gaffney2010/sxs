@@ -7,7 +7,8 @@ import retrying
 import selenium.webdriver
 
 from configs import *
-from shared_tools import cache
+from tools.cache import Cacher, memoize, TimedReadWriteCacher
+from shared_types import *
 
 DRIVER_DELAY_SEC = 3
 RAW_HTML_DIR = f"{SXS}/back-end/data/raw_html"
@@ -46,7 +47,7 @@ class WebDriver(object):
 
 
 def read_url_to_string(url: str, web_driver: WebDriver,
-                       cacher: Optional[cache.Cacher]) -> str:
+                       cacher: Optional[Cacher]) -> str:
     """ Read from a url and print to a string, after fully buffering.
 
     If errors after three tries, then will return an empty string.
@@ -63,9 +64,9 @@ def read_url_to_string(url: str, web_driver: WebDriver,
     """
     if cacher is None:
         # Default does nothing.
-        cacher = cache.Cacher()
+        cacher = Cacher()
 
-    @cache.memoize(url, cacher)
+    @memoize(url, cacher)
     # @swallow_error("")
     @retrying.retry(wait_random_min=200, wait_random_max=400,
                     stop_max_attempt_number=3)
@@ -75,3 +76,21 @@ def read_url_to_string(url: str, web_driver: WebDriver,
         return web_driver.driver().page_source
 
     return read_url_to_string_helper(url)
+
+
+def one_day_read(url: Url) -> str:
+    """Reads with a TimedReadWriteCacher with 1 day.
+
+    This is the default option.  Handles opening and closing the driver.
+
+    Args:
+        url: The URL to read.
+
+    Returns:
+         The body of the resulting HTML in a flat string.
+    """
+    raw_html_cacher = TimedReadWriteCacher(directory=RAW_HTML_DIR,
+                                           age_days=1)
+    with WebDriver() as driver:
+        page_text = read_url_to_string(url, driver, cacher=raw_html_cacher)
+    return page_text

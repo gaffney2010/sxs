@@ -9,7 +9,7 @@ import argparse
 import sqlite3
 
 from configs import *
-from shared_tools import sql
+from tools import sql
 
 
 # TODO: I can probably share some logic.

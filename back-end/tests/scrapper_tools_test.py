@@ -2,8 +2,8 @@ import pickle
 import unittest
 
 from configs import *
-from shared_tools import cache
-from shared_tools import scraper_tools
+from tools import cache
+from tools import scraper_tools
 
 
 class ScrapperTest(unittest.TestCase):

@@ -1,8 +1,9 @@
+from datetime import datetime
 from typing import Tuple
 
 import dateparser
 
-from shared_types import Date
+from shared_types import *
 
 
 def spread_favorite_amt(pick_clause, predicted_winner_id, away_team_id, home_team_id) -> Tuple[int, int]:
@@ -22,12 +23,17 @@ def spread_favorite_amt(pick_clause, predicted_winner_id, away_team_id, home_tea
         spread_amt = 0
     else:
         raise ValueError(
-            f"Unexpected, pick clause malformed: {game.pick_clause}"
+            f"Unexpected, pick clause malformed: {pick_clause}"
         )
     return spread_favorite, spread_amt
 
 
+# TODO: Move date functions to better file.
 def full_parse_date(text: str) -> Date:
     """Runs date parser, AND converts to Date."""
     pred = dateparser.parse(text)
     return pred.year * 10000 + pred.month * 100 + pred.day
+
+
+def today() -> Date:
+    return int(datetime.today().strftime("%Y%m%d"))

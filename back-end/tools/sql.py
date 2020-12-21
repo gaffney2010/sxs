@@ -1,8 +1,7 @@
 import functools
 import logging
 import sqlite3
-import sys
-from typing import Any, Callable, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 import pandas as pd
 
@@ -128,6 +127,13 @@ def add_row_to_table(
             values, ignore_index=True
         )
 
+    if safe_mode:
+        # Check the columns:
+        valid_columns = _get_columns_for_table(table_name)
+        for c in values.keys():
+            if c not in valid_columns:
+                raise Exception(f"Column {c} is not valid.")
+
     # Start building the SQL instruction
     column_strings, values_strings = list(), list()
     for column, value in values.items():
@@ -168,6 +174,16 @@ def query_df(query: str, conn=None) -> pd.DataFrame:
         return pd.DataFrame(columns=conn.columns)
     else:
         return pd.DataFrame(data)
+
+
+def sql_exists(query: str, conn=None) -> bool:
+    """Returns true if the query returns anything."""
+    if conn is None:
+        conn = SqlConn()
+
+    for result in conn.sql_query(query):
+        return True
+    return False
 
 
 def pull_everything_from_table(

@@ -7,6 +7,7 @@ Year = int
 Week = int
 SafeMode = bool
 TeamId = int
+GameKey = str
 
 @attr.s
 class Period(object):
