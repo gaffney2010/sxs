@@ -14,5 +14,4 @@ build/*
 # Scratch work
 oneoffs/*
 
-# Temporary files
-stack_scrapers/raw
+venv

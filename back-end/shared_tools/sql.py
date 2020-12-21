@@ -4,15 +4,12 @@ import sqlite3
 import sys
 from typing import Any, Callable, Dict, List, Optional, Tuple
 
-if sys.platform != "darwin":
-    # Doesn't work on my mac.
-    import MySQLdb
 import pandas as pd
 
-from configs import DB_VERSION, SQL_CONFIG, SXS
+from configs import DB_VERSION, LOCAL_DB_PATH
 from shared_types import *
 
-LOCAL_DB = f"{SXS}/back-end/data/local_db/{DB_VERSION}.db"
+LOCAL_DB = f"{LOCAL_DB_PATH}/{DB_VERSION}.db"
 
 INF = 10000  # Must exceed the number of rows for every table.
 NO_TABLES = 10  # For caching
@@ -44,25 +41,10 @@ class SqlConn(object):
 
             # Connect to SQL with SQL_CONFIG settings.
             logging.debug("Initializing new SqlConn.")
-            if sys.platform != "darwin":
-                cls._instance._mysql_conn = MySQLdb.connect(**SQL_CONFIG)
             cls._instance._sqlite_conn = sqlite3.connect(LOCAL_DB)
             cls._instance.columns = None
 
         return cls._instance
-
-    def _retry_mysql_with_reopen(self, f: Callable):
-        """Retry, opening _conn between."""
-        recent_exception = None
-        for _ in range(NO_RETRY):
-            try:
-                return f()
-            except Exception as e:
-                recent_exception = e
-                logging.debug("Initializing new SqlConn.")
-                self._mysql_conn = MySQLdb.connect(**SQL_CONFIG)
-
-        raise (recent_exception)
 
     def sql_query(self, query: str) -> List[Tuple]:
         """Low-level SQL query.
@@ -107,13 +89,6 @@ class SqlConn(object):
 
         self._sqlite_conn.cursor().execute(command)
         self._sqlite_conn.commit()
-
-        def execute_instructions():
-            self._mysql_conn.cursor().execute(command)
-            self._mysql_conn.commit()
-
-        if sys.platform != "darwin":
-            self._retry_mysql_with_reopen(execute_instructions)
 
 
 def _get_columns_for_table(table: str) -> List[str]:

@@ -3,8 +3,9 @@ scoring method.  That way I can compare old models if need be."""
 
 from collections import defaultdict
 import numpy as np
+from typing import Callable, List, Tuple
 
-from sql import *
+import sql
 
 STACK_TABLE = "stack_with_outcomes"
 
@@ -41,10 +42,10 @@ def v1_score(stack_record: List[Tuple[int, int]]) -> int:
 
 
 def compute_records(scorer: Callable[[List[Tuple[int, int]]], int], safe_mode: bool) -> None:
-    df = pull_everything_from_table(STACK_TABLE)
+    df = sql.pull_everything_from_table(STACK_TABLE)
     df["record"] = df.apply(_row_record, axis=1)
     stack_records = defaultdict(list)
     for _, row in df.iterrows():
         stack_records[row["expert_id"]].append((row["game_date"], row["record"]))
     for stack, record in stack_records.items():
-        add_row_to_table("records", {"expert_id": int(stack), "score": scorer(record)}, safe_mode=safe_mode)
+        sql.add_row_to_table("records", {"expert_id": int(stack), "score": scorer(record)}, safe_mode=safe_mode)

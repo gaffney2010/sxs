@@ -1,6 +1,15 @@
-import argparse
+################################################################################
+##
+##  This code is out of date.  It is kept here only for reference.
+##
 
-from sql import *
+from typing import Callable, List, Tuple
+
+import argparse
+import sqlite3
+
+from configs import *
+from shared_tools import sql
 
 
 # TODO: I can probably share some logic.
@@ -29,7 +38,7 @@ class TablePusher(object):
 
     def _retry_mysql_with_reopen(self, f: Callable):
         recent_exception = None
-        for _ in range(NO_RETRY):
+        for _ in range(sql.NO_RETRY):
             try:
                 return f()
             except Exception as e:
@@ -54,6 +63,6 @@ if __name__ == "__main__":
 
     in_conn = TablePuller(args.version)
     out_conn = TablePusher()
-    for _, row in pull_everything_from_table(args.table,
+    for _, row in sql.pull_everything_from_table(args.table,
                                              conn=in_conn).iterrows():
-        add_row_to_table(args.table, row.to_dict(), conn=out_conn)
+        sql.add_row_to_table(args.table, row.to_dict(), conn=out_conn)

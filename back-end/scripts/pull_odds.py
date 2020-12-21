@@ -10,8 +10,8 @@ from datetime import datetime
 import numpy as np
 import requests
 
-from configs import ODDS_API_KEY
-from sql import *
+from configs import *
+import sql
 
 RAW_ODDS_DIR = f"{SXS}/back-end/data/raw_odds"
 URL = "https://api.the-odds-api.com/v3/odds/"
@@ -47,7 +47,7 @@ def run_odds_scraper(safe_mode: bool) -> None:
 
             home_team = datum["home_team"]
             teams = datum["teams"]
-            home_team_id = get_team_id(home_team)
+            home_team_id = sql.get_team_id(home_team)
 
             home_team_index = 0 if teams[0] == home_team else 1
             away_team_index = 1 - home_team_index
@@ -71,4 +71,4 @@ def run_odds_scraper(safe_mode: bool) -> None:
                 "odds_home": odds_home,
                 "odds_away": odds_away,
             }
-            add_row_to_table(ODDS_TABLE, new_row, safe_mode=safe_mode)
+            sql.add_row_to_table(ODDS_TABLE, new_row, safe_mode=safe_mode)

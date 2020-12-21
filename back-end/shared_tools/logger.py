@@ -1,9 +1,7 @@
 from datetime import datetime
 import logging
 
-from configs import SXS
-
-LOG_DIR = f"{SXS}/back-end/logs/"
+from configs import *
 
 
 def configure_logging(safe_mode: bool) -> None:

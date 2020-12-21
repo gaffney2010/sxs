@@ -1,11 +1,13 @@
 """ These are some functions to aid in the scraping of a general webpage."""
+
+import time
 from typing import Optional
 
 import retrying
 import selenium.webdriver
 
-from shared_tools.logger import *
-from shared_tools.cache import *
+from configs import *
+from shared_tools import cache
 
 DRIVER_DELAY_SEC = 3
 RAW_HTML_DIR = f"{SXS}/back-end/data/raw_html"
@@ -44,7 +46,7 @@ class WebDriver(object):
 
 
 def read_url_to_string(url: str, web_driver: WebDriver,
-                       cacher: Optional[Cacher]) -> str:
+                       cacher: Optional[cache.Cacher]) -> str:
     """ Read from a url and print to a string, after fully buffering.
 
     If errors after three tries, then will return an empty string.
@@ -61,9 +63,9 @@ def read_url_to_string(url: str, web_driver: WebDriver,
     """
     if cacher is None:
         # Default does nothing.
-        cacher = Cacher()
+        cacher = cache.Cacher()
 
-    @memoize(url, cacher)
+    @cache.memoize(url, cacher)
     # @swallow_error("")
     @retrying.retry(wait_random_min=200, wait_random_max=400,
                     stop_max_attempt_number=3)

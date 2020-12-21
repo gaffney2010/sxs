@@ -1,7 +1,9 @@
+import pickle
 import unittest
 
-from shared_tools.cache import _transform_key
-from shared_tools.scraper_tools import *
+from configs import *
+from shared_tools import cache
+from shared_tools import scraper_tools
 
 
 class ScrapperTest(unittest.TestCase):
@@ -10,12 +12,12 @@ class ScrapperTest(unittest.TestCase):
         html = "https://stacksbystacks.com/test_file.txt"
         test_dir = f"{SXS}/back-end/test_data"
 
-        with WebDriver() as driver:
-            result = read_url_to_string(html, driver, WriteCacher(test_dir))
+        with scraper_tools.WebDriver() as driver:
+            result = scraper_tools.read_url_to_string(html, driver, cache.WriteCacher(test_dir))
 
         # This is written on the test_file.
         self.assertTrue(result.find("ABC123") != -1)
 
-        with open(_transform_key(html, test_dir), "rb") as f:
+        with open(cache._transform_key(html, test_dir), "rb") as f:
             cache_contents = pickle.load(f)
         self.assertTrue(cache_contents.find("ABC123") != -1)
