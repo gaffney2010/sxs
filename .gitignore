@@ -6,3 +6,4 @@ back-end/venv/
 
 # Don't save data
 sql/v2.db
+sql/backup_db/*

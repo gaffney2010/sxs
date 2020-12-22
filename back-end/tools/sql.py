@@ -292,9 +292,10 @@ def _get_or_prompt_id(
         known_ids = pull_everything_from_table(id_table)[id_column]
 
         # Get ID from user
+        max_known_id = 0 if len(known_ids) == 0 else max(known_ids)
         id = input(
             "Unknown text representing {}: {}.  Enter {} ID or 0 to fail or {} for new ID:".format(
-                id_type, lookup_value, id_type, max(known_ids) + 1
+                id_type, lookup_value, id_type, max_known_id + 1
             )
         )
         id = int(id)

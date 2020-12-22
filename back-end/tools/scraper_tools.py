@@ -14,6 +14,24 @@ DRIVER_DELAY_SEC = 3
 RAW_HTML_DIR = f"{SXS}/back-end/data/raw_html"
 
 
+def strip_white_space(x: str) -> str:
+    x = x.strip().replace("\n", " ")
+    # Remove consecutive whitespace
+    result = list()
+    mode = "TEXT"
+    for ch in x:
+        if mode == "WS":
+            if ch != " ":
+                mode = "TEXT"
+                result.append(" ")
+        if mode == "TEXT":
+            if ch == " ":
+                mode = "WS"
+                continue
+            result.append(ch)
+    return "".join(result)
+
+
 class WebDriver(object):
     """Used for convenient open and closing.
 
