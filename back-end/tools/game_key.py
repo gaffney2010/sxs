@@ -4,6 +4,10 @@ from shared_types import *
 from tools.sql import sql_exists
 
 
+class NoHeaderException(Exception):
+    pass
+
+
 class DoubleHeaderException(Exception):
     pass
 
@@ -26,7 +30,8 @@ def get_unique_game_key(date: int, x: TeamId, y: TeamId) -> GameKey:
     """Returns the GameKey iff there's only one game for the day.'"""
     key_1 = game_key(date, x, y)
     key_2 = game_key(date, x, y, 2)
-    assert(sql_exists(f"select * from Game where game_key={key_1}"))
-    if sql_exists(f"select * from Game where game_key={key_2}"):
+    if not sql_exists(f"select * from Game where game_key='{key_1}';"):
+        raise NoHeaderException
+    if sql_exists(f"select * from Game where game_key='{key_2}';"):
         raise DoubleHeaderException
     return key_1

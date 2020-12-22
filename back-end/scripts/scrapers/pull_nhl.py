@@ -14,7 +14,7 @@ from typing import Iterator, Set
 
 import bs4
 
-from tools import game_key, scraper_tools, stack_tools, sql
+from tools import game_key, scraper_tools, date_lib, sql
 from shared_types import *
 
 HR_URL = "https://www.hockey-reference.com/leagues/NHL_{}_games.html"
@@ -30,7 +30,7 @@ def get_html_for_dates(start: Date, end: Date) -> Iterator[str]:
 def parse_df(df: pd.DataFrame, start: Date, end: Date,
              unique_games: Set[GameKey], safe_mode: bool) -> None:
     for _, row in df.iterrows():
-        date = stack_tools.full_parse_date(row["Date"])
+        date = date_lib.full_parse_date(row["Date"])
         if date < start or date > end:
             continue
 
@@ -47,7 +47,7 @@ def parse_df(df: pd.DataFrame, start: Date, end: Date,
         game_row = {
             "game_key": gk,
             "game_date": date,
-            "play_status": "PAST" if date < stack_tools.today() else "UPCOMING",
+            "play_status": "PAST" if date < date_lib.today() else "UPCOMING",
             "home_team_id": home_id,
             "away_team_id": away_id,
             "home_score": row["G.1"],

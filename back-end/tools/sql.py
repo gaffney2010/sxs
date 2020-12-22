@@ -181,7 +181,7 @@ def sql_exists(query: str, conn=None) -> bool:
     if conn is None:
         conn = SqlConn()
 
-    for result in conn.sql_query(query):
+    for _ in conn.sql_query(query):
         return True
     return False
 
