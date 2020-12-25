@@ -104,7 +104,8 @@ def _convert_field_to_sql(value: Any) -> str:
 
 
 def add_row_to_table(
-    table_name: str, values: Dict[str, Any], safe_mode: bool = False, conn=None
+        table_name: str, values: Dict[str, Any], safe_mode: bool = False,
+        conn=None
 ) -> None:
     """Add the given values to the table.
 
@@ -187,7 +188,7 @@ def sql_exists(query: str, conn=None) -> bool:
 
 
 def pull_everything_from_table(
-    table_name: str, read_from_cache: bool = True, conn=None
+        table_name: str, read_from_cache: bool = True, conn=None
 ) -> pd.DataFrame:
     """Same as query_df, but with table_name argument and caching.
 
@@ -215,11 +216,11 @@ def _clean_text(txt: str) -> str:
 
 
 def _get_id(
-    lookup_value: str,
-    cw_table: str,
-    text_column: str,
-    id_column: str,
-    cache: bool,
+        lookup_value: str,
+        cw_table: str,
+        text_column: str,
+        id_column: str,
+        cache: bool,
 ) -> Optional[int]:
     """Given a string that represents a team, find the ID.
 
@@ -242,14 +243,47 @@ def _get_id(
     return filtered.iloc[0][id_column]
 
 
+def _lookup_id(
+        lookup_value: str,
+        cw_table: str,
+        text_column: str,
+        id_column: str,
+) -> Optional[int]:
+    """Given a string, lookup the ID.
+
+    Searches the passed table name.  If missed from local cache, look up on
+    remote table.
+
+    Args:
+        lookup_value: The value that we want to find the ID for.
+        cw_table: Name of cross-walk table to use.
+        text_column: Name of the column with the lookupable values.
+        id_column: Name of the column with the IDs..
+
+    Returns:
+        Our internal ID or None if it doesn't exist.
+    """
+
+    lookup_value = _clean_text(lookup_value)
+
+    # Pull from remote on miss
+    result = _get_id(lookup_value, cw_table, text_column, id_column, cache=True)
+    if not result:
+        result = _get_id(
+            lookup_value, cw_table, text_column, id_column, cache=False
+        )
+
+    return result
+
+
 def _get_or_prompt_id(
-    lookup_value: str,
-    id_table: str,
-    cw_table: str,
-    text_column: str,
-    id_column: str,
-    id_type: str,
-    prompt_on_miss: bool = True,
+        lookup_value: str,
+        id_table: str,
+        cw_table: str,
+        text_column: str,
+        id_column: str,
+        id_type: str,
+        prompt_on_miss: bool = True,
 ) -> int:
     """Given a string, lookup the ID.
 
@@ -273,15 +307,8 @@ def _get_or_prompt_id(
     Raises:
         ValueError: If the text is not known or prompt is not a team ID
     """
-    lookup_value = _clean_text(lookup_value)
-
-    # Pull from remote on miss
-    result = _get_id(lookup_value, cw_table, text_column, id_column, cache=True)
-    if not result:
-        result = _get_id(
-            lookup_value, cw_table, text_column, id_column, cache=False
-        )
-
+    # If we can find it, then just return.
+    result = _lookup_id(lookup_value, cw_table, text_column, id_column)
     if result:
         return result
 
@@ -350,6 +377,25 @@ def get_expert_id(expert_text: str, prompt_on_miss: bool = True) -> int:
         id_type="expert",
         prompt_on_miss=prompt_on_miss,
     )
+
+
+def force_get_expert_id(expert_text: str) -> int:
+    """Find Expert ID or create a new row expert_text, and HUMAN."""
+    result = _lookup_id(expert_text, EXPERT_CW_TABLE, EXPERT_TEXT_COLUMN,
+                        EXPERT_ID_COLUMN)
+    if result:
+        return result
+
+    known_ids = pull_everything_from_table(EXPERT_ID_TABLE)[EXPERT_ID_COLUMN]
+    new_id = max(known_ids) + 1
+
+    add_row_to_table(EXPERT_CW_TABLE, {EXPERT_TEXT_COLUMN: expert_text,
+                                       EXPERT_ID_COLUMN: new_id})
+    add_row_to_table(EXPERT_ID_TABLE,
+                     {EXPERT_ID_COLUMN: new_id, "expert_type": "HUMAN",
+                      EXPERT_TEXT_COLUMN: expert_text})
+
+    return new_id
 
 
 def get_date_from_week_hometeam(period: Period, hometeam: int) -> int:

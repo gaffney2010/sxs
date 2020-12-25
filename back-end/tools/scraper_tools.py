@@ -1,5 +1,6 @@
 """ These are some functions to aid in the scraping of a general webpage."""
 
+import logging
 import time
 from typing import Optional
 
@@ -50,11 +51,13 @@ class WebDriver(object):
         """Get the main object, loading if necessary."""
         # Lazy load
         if self._driver is None:
+            logging.debug("Initializing driver.")
             options = selenium.webdriver.FirefoxOptions()
             options.add_argument('--headless')
             self._driver = selenium.webdriver.Firefox(
                 options=options,
                 service_log_path="{}/geckodriver.log".format(LOG_DIR))
+            logging.debug("Finished initializing driver.")
         return self._driver
 
     def __exit__(self, type, value, tb):
@@ -107,8 +110,10 @@ def one_day_read(url: Url) -> str:
     Returns:
          The body of the resulting HTML in a flat string.
     """
+    logging.info(f"Reading URL: {url}")
     raw_html_cacher = TimedReadWriteCacher(directory=RAW_HTML_DIR,
                                            age_days=1)
     with WebDriver() as driver:
         page_text = read_url_to_string(url, driver, cacher=raw_html_cacher)
+    logging.info("Finished pulling URL.")
     return page_text

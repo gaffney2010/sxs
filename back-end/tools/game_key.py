@@ -4,11 +4,15 @@ from shared_types import *
 from tools.sql import sql_exists
 
 
-class NoHeaderException(Exception):
+class HeaderException(Exception):
     pass
 
 
-class DoubleHeaderException(Exception):
+class NoHeaderException(HeaderException):
+    pass
+
+
+class DoubleHeaderException(HeaderException):
     pass
 
 
