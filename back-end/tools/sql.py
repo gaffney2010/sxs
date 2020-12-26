@@ -263,9 +263,6 @@ def _lookup_id(
     Returns:
         Our internal ID or None if it doesn't exist.
     """
-
-    lookup_value = _clean_text(lookup_value)
-
     # Pull from remote on miss
     result = _get_id(lookup_value, cw_table, text_column, id_column, cache=True)
     if not result:
@@ -307,6 +304,8 @@ def _get_or_prompt_id(
     Raises:
         ValueError: If the text is not known or prompt is not a team ID
     """
+    lookup_value = _clean_text(lookup_value)
+
     # If we can find it, then just return.
     result = _lookup_id(lookup_value, cw_table, text_column, id_column)
     if result:
@@ -381,6 +380,8 @@ def get_expert_id(expert_text: str, prompt_on_miss: bool = True) -> int:
 
 def force_get_expert_id(expert_text: str) -> int:
     """Find Expert ID or create a new row expert_text, and HUMAN."""
+    expert_text = _clean_text(expert_text)
+
     result = _lookup_id(expert_text, EXPERT_CW_TABLE, EXPERT_TEXT_COLUMN,
                         EXPERT_ID_COLUMN)
     if result:
