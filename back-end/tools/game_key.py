@@ -30,7 +30,7 @@ def game_key(date: int, x: TeamId, y: TeamId, n: int = 1) -> str:
     return "{}{}x{}".format(date, n, t_str)
 
 
-def get_unique_game_key(date: int, x: TeamId, y: TeamId) -> GameKey:
+def get_unique_game_key(date: Date, x: TeamId, y: TeamId) -> GameKey:
     """Returns the GameKey iff there's only one game for the day.'"""
     key_1 = game_key(date, x, y)
     key_2 = game_key(date, x, y, 2)

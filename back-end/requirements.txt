@@ -5,6 +5,7 @@ html5lib # For pd.read_html
 mysqlclient # brew install mysql??
 numpy
 pandas
+praw
 pyinstaller
 retrying
 requests
