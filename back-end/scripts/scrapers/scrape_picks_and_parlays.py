@@ -1,4 +1,4 @@
-"""Script pull_nhl will pull CBS with start and end dates.
+"""Script pull_nhl will pull PicksAndParlays with start and end dates.
 
 Ex. https://freepicks.picksandparlays.net/more-free-picks/nhl-picks
 https://freepicks.picksandparlays.net/more-free-picks/nhl-picks/dallas-stars-vs-tampa-bay-lightning-92620-nhl-picks-and-predictions
@@ -8,17 +8,18 @@ Not like -- https://freepicks.picksandparlays.net/more-free-picks/nhl-picks/ligh
 ################################################################################
 # Logging logic, must come first
 SAFE_MODE = False
-from tools.logger import configure_logging
 import logging
+
+from tools.logger import configure_logging
 
 configure_logging(SAFE_MODE, logging_level=logging.INFO)
 ################################################################################
 
 import enum
 # import logging
+import traceback
 
 import bs4
-import traceback
 
 from shared_types import *
 from tools import date_lib, game_key, scraper_tools, sql
@@ -55,7 +56,10 @@ def pull_page(url: Url, safe_mode: bool = SAFE_MODE) -> PullStatus:
     teams = [span.text for span in game_clause.findAll("span")]
     assert (len(teams) == 2)
     team_1, team_2 = teams
-    team_1_id, team_2_id = sql.get_team_id(team_1), sql.get_team_id(team_2)
+    # Danger mode
+    team_1_id, team_2_id = sql.get_team_id(team_1,
+                                           prompt_on_miss=False), sql.get_team_id(
+        team_2, prompt_on_miss=False)
 
     date_clause = soup.find("td", {"itemprop": "startDate"})
     date = date_lib.full_parse_date(date_clause.text)
@@ -79,7 +83,7 @@ def pull_page(url: Url, safe_mode: bool = SAFE_MODE) -> PullStatus:
         "expert_id": expert_id,
         "affiliate": "PicksAndParlays",
         "game_key": gk,
-        "predicted_winner_id": sql.get_team_id(pick),
+        "predicted_winner_id": sql.get_team_id(pick, prompt_on_miss=False),
         "money_line": ml,
         "body": article_text,
         "link": url,
@@ -129,4 +133,4 @@ def pull_all_starting_with_page(pg_no: int, start: Date, end: Date,
             return
 
 
-pull_all_starting_with_page(0, 0, 99999999)
+pull_all_starting_with_page(11, 0, 99999999)
