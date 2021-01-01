@@ -11,7 +11,4 @@ dist/*
 build/*
 .idea/*
 
-# Scratch work
-oneoffs/*
-
 venv

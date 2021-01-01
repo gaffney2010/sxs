@@ -33,7 +33,7 @@ class RecordCalcInterface(object):
 
 class RecordCalcV1(RecordCalcInterface):
     UNIT = 25
-    FULLY_CREDIBLE = 100
+    FULLY_CREDIBLE = 200
 
     def __init__(self, expert_id: ExpertId):
         super().__init__(expert_id, version=1)
@@ -65,7 +65,7 @@ class RecordCalcV1(RecordCalcInterface):
             self._winner_id, axis=1)
 
     def _baseline(self, n: int):
-        return 2 * self.UNIT * np.sqrt(n) + n
+        return self.UNIT * np.sqrt(n) + n
 
     def _net(self, line: int, won: bool) -> float:
         bet_size = self.UNIT * np.sqrt(100 / abs(line))
@@ -112,6 +112,7 @@ class RecordCalcV1(RecordCalcInterface):
         }
         sql.add_row_to_table("records", record, safe_mode=self.safe_mode)
 
+    # TODO: Use start/end
     def calc_for_date_range(self, start: Date, end: Date) -> None:
         if self.stacks_and_games is None:
             # raise Exception("Must run load_stacks_and_games first.")
@@ -131,6 +132,7 @@ class RecordCalcV1(RecordCalcInterface):
 
             last_date = next_date
             buffer.append(row)
+        # TODO: Post for future dates...
 
 
 for i in range(1, 15):
