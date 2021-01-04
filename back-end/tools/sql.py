@@ -1,9 +1,11 @@
 import functools
 import logging
 import sqlite3
+import time
 from typing import Any, Dict, List, Optional, Tuple
 
 import pandas as pd
+import unidecode
 
 from configs import DB_VERSION, LOCAL_DB_PATH
 from shared_types import *
@@ -15,6 +17,8 @@ NO_TABLES = 10  # For caching
 NFL_TEAMS = 32
 NO_RETRY = 3
 
+MAX_OUTPUT = 1000
+
 TEAM_CW_TABLE = "team_cw"
 TEAM_ID_TABLE = "team"
 TEAM_TEXT_COLUMN = "team_text"
@@ -24,11 +28,23 @@ EXPERT_ID_TABLE = "expert"
 EXPERT_TEXT_COLUMN = "expert_text"
 EXPERT_ID_COLUMN = "expert_id"
 
+TIMED_TABLES = ["game", "team_cw", "stack", "odd", "records"]
+ALL_TABLES = ["expert", "expert_cw", "team"] + TIMED_TABLES
+
+TS = "ts"
+
 
 @functools.lru_cache(1)
 def table_cache() -> Dict[str, pd.DataFrame]:
     """Hacky singleton"""
     return dict()
+
+
+def _sql_print(txt: str) -> None:
+    """Used to print sql statements to screen."""
+    if len(txt) > MAX_OUTPUT:
+        txt = txt[MAX_OUTPUT:] + "..."
+    logging.info(txt)
 
 
 class SqlConn(object):
@@ -60,7 +76,7 @@ class SqlConn(object):
             A list of tuples, which represent the fields in order.  Can use
                 helper functions to join this with the column names.
         """
-        logging.info(f"Query: {query}")
+        _sql_print(f"Query: {query}")
 
         cur = self._sqlite_conn.cursor()
         cur.execute(query)
@@ -80,7 +96,7 @@ class SqlConn(object):
             command: The statement to execute
             safe_mode: If true, don't actually make any changes to the table.
         """
-        logging.info(f"Execute: {command}")
+        _sql_print(f"Execute: {command}")
 
         if safe_mode:
             # In this case, print only.
@@ -96,15 +112,18 @@ def _get_columns_for_table(table: str) -> List[str]:
 
 
 def _convert_field_to_sql(value: Any) -> str:
+    if value != value:
+        return "NULL"
     if value is None:
         return "NULL"
     if isinstance(value, str):
-        return f'"{value}"'
+        return f'"{unidecode.unidecode(value)}"'
     return str(value)
 
 
-def add_row_to_table(
-        table_name: str, values: Dict[str, Any], safe_mode: bool = False,
+def batch_add_rows_to_table(
+        table_name: str, values_df: pd.DataFrame,
+        safe_mode: bool = False,
         conn=None
 ) -> None:
     """Add the given values to the table.
@@ -112,42 +131,63 @@ def add_row_to_table(
     Technically executes a replace, which will delete old values if the primary
     key already exists for the row.
 
+    If ts (timestamp) is not set on values, then add it.  For this reason, most
+    updates should use this function.
+
     Args:
         table_name: The name of the table in the default DB.
-        values: A dict where the keys are the row names.  Will ignore any
-            invalid keys.
+        values_df: A dataframe with values.  Will ignore any invalid keys in
+            non-safe_mode and will fail in safe_mode.
         safe_mode: If true, don't actually make any changes to the table.
         conn: If set use for reads.  Otherwise use default.
     """
     if conn is None:
         conn = SqlConn()
 
-    # Update cache
-    if table_name in table_cache():
-        table_cache()[table_name] = table_cache()[table_name].append(
-            values, ignore_index=True
-        )
+    # Check if timestamp is needed.
+    if table_name in TIMED_TABLES and TS not in values_df:
+        # Deep copy so that we don't modify in place.
+        values_df = values_df.copy()
+        values_df[TS] = int(time.time())  # Fill in
 
+    # Check the columns' validity.
     if safe_mode:
-        # Check the columns:
         valid_columns = _get_columns_for_table(table_name)
-        for c in values.keys():
+        for c in values_df.columns:
             if c not in valid_columns:
                 raise Exception(f"Column {c} is not valid.")
 
+    # Update cache
+    if table_name in table_cache():
+        table_cache()[table_name] = pd.concat(
+            [table_cache()[table_name], values_df], ignore_index=True)
+
     # Start building the SQL instruction
-    column_strings, values_strings = list(), list()
-    for column, value in values.items():
-        column_strings.append(column)
-        values_strings.append(_convert_field_to_sql(value))
-    column_clause = ", ".join(column_strings)
+    cols = values_df.columns
+    column_clause = ", ".join(cols)
+    values_strings = list()
+    for _, row in values_df.iterrows():
+        row_data = list()
+        for col in cols:
+            row_data.append(_convert_field_to_sql(row[col]))
+        values_strings.append("({})".format(", ".join(row_data)))
     value_clause = ", ".join(values_strings)
 
     # Execute SQL instruction
     conn.sql_execute(
-        f"replace into {table_name} ({column_clause}) values ({value_clause});",
+        f"replace into {table_name} ({column_clause}) values {value_clause};",
         safe_mode=safe_mode,
     )
+
+
+def add_row_to_table(
+        table_name: str, values: Dict[str, Any], safe_mode: bool = False,
+        conn=None
+) -> None:
+    """Same as batch_add_rows_to_table, with single row."""
+    batch_add_rows_to_table(table_name, pd.DataFrame(values, [0]),
+                            safe_mode=safe_mode,
+                            conn=conn)
 
 
 def query_df(query: str, conn=None) -> pd.DataFrame:

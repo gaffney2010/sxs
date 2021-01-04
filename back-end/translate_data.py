@@ -1,3 +1,11 @@
+################################################################################
+# Logging logic, must come first
+SAFE_MODE = True
+from tools.logger import configure_logging
+
+configure_logging(SAFE_MODE)
+################################################################################
+
 import enum
 import logging
 from typing import Callable, List, Tuple
@@ -5,9 +13,7 @@ from typing import Callable, List, Tuple
 import MySQLdb
 
 from configs import *
-
-TIMED_TABLES = ["game", "team_cw", "stack", "odd", "records"]
-ALL_TABLES = ["expert", "expert_cw", "team"] + TIMED_TABLES
+from tools import sql
 
 NO_RETRY = 3
 
@@ -69,11 +75,25 @@ class TranslationType(enum.Enum):
 
 
 def soft_translate():
-    for table in TIMED_TABLES:
-        
+    for table in sql.TIMED_TABLES:
+        curr = sql.query_df(f"select ts from {table} order by 1 desc;",
+                            conn=RemoteSqlConn())
+        if curr.shape[0] == 0:
+            last_ts = 0
+        else:
+            last_ts = curr["ts"][0] or 0
+        for _, row in sql.pull_everything_from_table(table).iterrows():
+            if row["ts"] >= last_ts:
+                sql.add_row_to_table(table, row.to_dict(), conn=RemoteSqlConn())
+
 
 def hard_translate():
-    pass
+    # Need to first drop old tables, and run scripts to set up.
+    for table in sql.ALL_TABLES:
+        logging.debug(table)
+        sql.batch_add_rows_to_table(table,
+                                    sql.pull_everything_from_table(table),
+                                    conn=RemoteSqlConn())
 
 
 def translate(type: TranslationType):
@@ -83,3 +103,6 @@ def translate(type: TranslationType):
         hard_translate()
     else:
         raise Exception("UNKNOWN TranslationType encountered.")
+
+
+translate(TranslationType.HARD)

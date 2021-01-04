@@ -1,5 +1,5 @@
 create table if not exists game (
-    game_key varchar(255), --YYYYMMDD#x(id)
+    game_key varchar(255), -- YYYYMMDD#x(id)
     game_date int,
     play_status varchar(255), -- UPCOMING, LIVE, PAST
     home_team_id int,  -- foreign key

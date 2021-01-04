@@ -10,3 +10,4 @@ pyinstaller
 retrying
 requests
 selenium
+unidecode
