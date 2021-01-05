@@ -29,7 +29,7 @@ export class GameComponent implements OnInit {
   async ngOnInit() {
     var url = new URL('https://stacksbystacks.com/Sql.php');
     url.searchParams.append('columns', 'expert_name,expert_id,affiliate,link,predicted_winner_name,predicted_winner_id,money_line');
-    url.searchParams.append('table', 'stacks_with_stacks_with_stacks');
+    url.searchParams.append('table', 'swsws_table');
     // Must do key/value over where because string.
     url.searchParams.append('key', "game_key");
     url.searchParams.append('value', this.game_data.game_key);

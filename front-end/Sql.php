@@ -30,7 +30,7 @@ if (empty($columns) || empty($table)) {
 }
 if (empty($where_clause)) {
   if (!empty($key) and !empty($value)) {
-    $where_clause = $key + "='" + $value + "'";
+    $where_clause = $key . "='" . $value . "'";
   } else {
     $where_clause = "true";
   }

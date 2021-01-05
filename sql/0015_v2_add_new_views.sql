@@ -13,6 +13,7 @@ on          x.home_team_id=home.team_id
 inner join  team away
 on          x.away_team_id=away.team_id;
 
+# Some of these don't really work with sqlite.  IDK what to do?
 drop view stacks_with_stacks_with_stacks;
 create view stacks_with_stacks_with_stacks as
 select 		*
