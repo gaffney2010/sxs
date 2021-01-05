@@ -4,8 +4,9 @@
 $method = $_SERVER['REQUEST_METHOD'];
 
 // connect to the mysql database
-$configs = include('SqlConfig.php');
-$mysqli = new mysqli($configs['host'], $configs['username'], $configs['password'], $configs['database']);
+require 'SqlDb.php';
+$db = Database::getInstance();
+$mysqli = $db->getConnection();
 
 function safeGet($mysqli, $param) {
   if (isset($_GET[$param])) {
@@ -21,11 +22,18 @@ $where_clause = safeGet($mysqli, 'where');
 $order_clause = safeGet($mysqli, 'order');
 $limit = safeGet($mysqli, 'limit');
 
+$key = safeGet($mysqli, 'key');
+$value = safeGet($mysqli, 'value');
+
 if (empty($columns) || empty($table)) {
   die("columns and table must be passed.");
 }
 if (empty($where_clause)) {
-  $where_clause = "true";
+  if (!empty($key) and !empty($value)) {
+    $where_clause = $key + "='" + $value + "'";
+  } else {
+    $where_clause = "true";
+  }
 }
 if (empty($order_clause)) {
   $order_clause = "1";

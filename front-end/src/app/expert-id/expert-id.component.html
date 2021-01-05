@@ -13,6 +13,6 @@
       <b>@</b>&nbsp;&nbsp;
       <span ng-show="scoresExist">{{stack.home_score}}&nbsp;&nbsp;</span>
       <span [ngStyle]="{ 'font-weight' : (isAwayWon(stack)) ? 'bold' : 'normal'  }">{{stack.home_team_name}}</span></p></td>
-    <td><a href="{{stack.link}}">{{stack.predicted_winner_name}}</a> ({{spread(stack)}})</td>
+    <td><a href="{{stack.link}}">{{stack.predicted_winner_name}}</a> ({{stack.money_line}})</td>
   </tr>
 </table>

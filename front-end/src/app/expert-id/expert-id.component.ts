@@ -22,17 +22,6 @@ export class ExpertIdComponent implements OnInit {
     return stack.home_score < stack.away_score;
   }
 
-  spread(stack: ExpertDetails) {
-    let result = "";
-    if (stack.spread_favorite == stack.predicted_winner_id_with_spread) {
-      result += "-";
-    } else {
-      result += "+";
-    }
-    result += stack.spread_amt;
-    return result;
-  }
-
   async ngOnInit() {
     this.expert_id = +this.route.snapshot.paramMap.get('expert_id');
 
@@ -45,7 +34,7 @@ export class ExpertIdComponent implements OnInit {
   	this.expert_name = json_arr[0].expert_text;
 
     var url2 = new URL('https://stacksbystacks.com/Sql.php');
-    url2.searchParams.append('columns', 'expert_id,game_date,home_team_name,away_team_name,home_score,away_score,spread_favorite,spread_amt,link,predicted_winner_id_with_spread,predicted_winner_name');
+    url2.searchParams.append('columns', 'expert_id,game_date,home_team_name,away_team_name,home_score,away_score,money_line,link,predicted_winner_id,predicted_winner_name');
     url2.searchParams.append('table', 'expert_details');
     url2.searchParams.append('where', 'expert_id=' + this.expert_id);
     url2.searchParams.append('order', 'game_date desc');

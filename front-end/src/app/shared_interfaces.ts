@@ -1,7 +1,7 @@
 
 export interface Game {
+  game_key: string;
   game_date: bigint;
-  home_team_id: bigint;
   home_score: bigint;
   away_score: bigint;
   home_team_name: string;
