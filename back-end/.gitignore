@@ -5,6 +5,7 @@ test_data/*
 logs/*
 data/*
 */__pycache__/*
+*/*/__pycache__/*
 
 # pyinstaller output, may be large
 dist/*
@@ -12,3 +13,6 @@ build/*
 .idea/*
 
 venv
+
+# specs
+cron_jobs/specs/*

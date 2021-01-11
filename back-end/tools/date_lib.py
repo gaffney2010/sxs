@@ -1,4 +1,4 @@
-from datetime import datetime
+import datetime
 
 import dateparser
 
@@ -12,4 +12,10 @@ def full_parse_date(text: str) -> Date:
 
 
 def today() -> Date:
-    return int(datetime.today().strftime("%Y%m%d"))
+    return int(datetime.datetime.today().strftime("%Y%m%d"))
+
+
+def today_plus(delta: int) -> Date:
+    today = datetime.datetime.today()
+    then = today + datetime.timedelta(days=delta)
+    return int(then.strftime("%Y%m%d"))
