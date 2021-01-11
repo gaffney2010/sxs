@@ -15,4 +15,4 @@ build/*
 venv
 
 # specs
-cron_jobs/specs/*
+*.spec

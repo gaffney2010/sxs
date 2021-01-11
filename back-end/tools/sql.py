@@ -199,7 +199,7 @@ def batch_add_rows_to_table(
         conn = SqlConn()
 
     # Check if timestamp is needed.
-    if table_name in TIMED_TABLES and TS not in values_df:
+    if table_name.lower() in TIMED_TABLES and TS not in values_df:
         # Deep copy so that we don't modify in place.
         values_df = values_df.copy()
         values_df[TS] = int(time.time())  # Fill in
