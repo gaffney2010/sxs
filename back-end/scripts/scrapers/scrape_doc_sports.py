@@ -124,4 +124,4 @@ def pull_all_starting_with_page(pg_no: int, start: Date, end: Date,
             return
 
 
-pull_all_starting_with_page(0, 20181001, 99999999)
+# pull_all_starting_with_page(0, 20181001, 99999999)
