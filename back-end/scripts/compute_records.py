@@ -35,8 +35,8 @@ class RecordCalcV1(RecordCalcInterface):
     UNIT = 25
     FULLY_CREDIBLE = 200
 
-    def __init__(self, expert_id: ExpertId):
-        super().__init__(expert_id, version=1)
+    def __init__(self, expert_id: ExpertId, safe_mode: bool = SAFE_MODE):
+        super().__init__(expert_id, version=1, safe_mode=safe_mode)
         self.stacks_and_games = None
 
     def _winner_id(self, row: Dict) -> TeamId:
@@ -89,7 +89,7 @@ class RecordCalcV1(RecordCalcInterface):
         # print(f"DEBUG: {self._baseline(len(self.deltas))}, {self.net}")
         return self._baseline(len(self.deltas)) + self.net
 
-    def _clear_buffer(self, next_date, buffer) -> None:
+    def _clear_buffer_and_write(self, next_date, buffer, trigger_write) -> None:
         # Clears buffer in place.
         while buffer:
             item = buffer.pop()
@@ -105,14 +105,15 @@ class RecordCalcV1(RecordCalcInterface):
                     self.deltas = self.deltas[1:]
 
         # Record for the date.
-        record = {
-            "expert_id": self.expert_id,
-            "at_date": next_date,
-            "score": int(self._score()),
-        }
-        sql.add_row_to_table("records", record, safe_mode=self.safe_mode)
+        if trigger_write:
+            record = {
+                "expert_id": self.expert_id,
+                "at_date": next_date,
+                "score": int(self._score()),
+            }
+            sql.add_row_to_table("records", record, safe_mode=self.safe_mode,
+                                 conn=self.conn)
 
-    # TODO: Use start/end
     def calc_for_date_range(self, start: Date, end: Date) -> None:
         if self.stacks_and_games is None:
             # raise Exception("Must run load_stacks_and_games first.")
@@ -127,16 +128,18 @@ class RecordCalcV1(RecordCalcInterface):
         for _, row in self.stacks_and_games.iterrows():
             next_date = row["game_date"]
             if next_date != last_date:
-                self._clear_buffer(next_date, buffer)
+                trigger_write = (start <= last_date < end)
+                self._clear_buffer_and_write(next_date, buffer, trigger_write)
                 assert (len(buffer) == 0)
 
             last_date = next_date
             buffer.append(row)
-        # TODO: Post for future dates...
 
 
-for i in range(1, 15):
-    if i in [10, 13]:
-        # Don't know why this is empty...
-        continue
-    RecordCalcV1(i).calc_for_date_range(0, 99999999)
+def compute_v1_records_for_all(start: Date, end: Date,
+                               safe_mode: bool = SAFE_MODE):
+    for i in range(1, 15):
+        try:
+            RecordCalcV1(i, safe_mode=safe_mode).calc_for_date_range(start, end)
+        except:
+            pass

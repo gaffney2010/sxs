@@ -271,4 +271,4 @@ def pull_all_comments(start: Date, end: Date, safe_mode: bool = SAFE_MODE) -> No
                     logging.error(traceback.format_exc())
 
 
-pull_all_comments(0, 99999999)
+# pull_all_comments(0, 99999999)
