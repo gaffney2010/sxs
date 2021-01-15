@@ -8,9 +8,12 @@ configure_logging(SAFE_MODE)
 
 from tools import sql
 
+
 def mat():
-    sql.batch_add_rows_to_table("swsws_table",
-                                sql.pull_everything_from_table(
-                                    "stacks_with_stacks_with_stacks",
-                                    conn=sql.RemoteSqlConn()),
-                                conn=sql.RemoteSqlConn())
+    sql.batch_add_rows_to_table(
+        "swsws_table",
+        sql.pull_everything_from_table(
+            "stacks_with_stacks_with_stacks", conn=sql.RemoteSqlConn()
+        ),
+        conn=sql.RemoteSqlConn(),
+    )

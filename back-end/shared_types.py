@@ -10,6 +10,7 @@ TeamId = int
 GameKey = str
 ExpertId = int
 
+
 @attr.s
 class Period(object):
     year: int = attr.ib()
