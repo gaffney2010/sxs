@@ -15,7 +15,7 @@ from tools import sql
 
 
 class RecordCalcInterface(object):
-    def __init__(self, expert_id: ExpertId, version: int, conn=None,
+    def __init__(self, expert_id: ExpertId, version: int, conn: sql.SqlConnection = None,
                  safe_mode: bool = SAFE_MODE):
         self.expert_id = expert_id
         self.version = version

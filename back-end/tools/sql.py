@@ -37,7 +37,15 @@ TS = "ts"
 NO_RETRY = 3
 
 
-class RemoteSqlConn(object):
+class SqlConnection(object):
+    def sql_query(self, query: str) -> List[Tuple]:
+        raise NotImplementedError
+
+    def sql_execute(self, command: str, safe_mode: bool = False) -> None:
+        raise NotImplementedError
+
+
+class RemoteSqlConn(SqlConnection):
     _instance = None
 
     def __new__(cls, *args, **kwargs):
@@ -101,7 +109,7 @@ def _sql_print(txt: str) -> None:
     logging.info(txt)
 
 
-class SqlConn(object):
+class SqlConn(SqlConnection):
     _instance = None
 
     def __new__(cls, *args, **kwargs):
@@ -178,7 +186,7 @@ def _convert_field_to_sql(value: Any) -> str:
 def batch_add_rows_to_table(
         table_name: str, values_df: pd.DataFrame,
         safe_mode: bool = False,
-        conn=None
+        conn: SqlConnection = None
 ) -> None:
     """Add the given values to the table.
 
@@ -236,7 +244,7 @@ def batch_add_rows_to_table(
 
 def add_row_to_table(
         table_name: str, values: Dict[str, Any], safe_mode: bool = False,
-        conn=None
+        conn: SqlConnection = None
 ) -> None:
     """Same as batch_add_rows_to_table, with single row."""
     batch_add_rows_to_table(table_name, pd.DataFrame(values, [0]),
@@ -244,7 +252,7 @@ def add_row_to_table(
                             conn=conn)
 
 
-def query_df(query: str, conn=None) -> pd.DataFrame:
+def query_df(query: str, conn: SqlConnection = None) -> pd.DataFrame:
     """Runs the query, and returns in a dataframe format.
 
     Args:
@@ -271,7 +279,7 @@ def query_df(query: str, conn=None) -> pd.DataFrame:
         return pd.DataFrame(data)
 
 
-def sql_exists(query: str, conn=None) -> bool:
+def sql_exists(query: str, conn: SqlConnection = None) -> bool:
     """Returns true if the query returns anything."""
     if conn is None:
         conn = SqlConn()
@@ -282,7 +290,7 @@ def sql_exists(query: str, conn=None) -> bool:
 
 
 def pull_everything_from_table(
-        table_name: str, read_from_cache: bool = True, conn=None
+        table_name: str, read_from_cache: bool = True, conn: SqlConnection = None
 ) -> pd.DataFrame:
     """Same as query_df, but with table_name argument and caching.
 

@@ -6,8 +6,10 @@ mysqlclient # brew install mysql??
 numpy
 pandas
 praw
+psycopg2
 pyinstaller
 retrying
 requests
 selenium
+testing.postgresql
 unidecode

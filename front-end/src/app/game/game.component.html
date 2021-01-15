@@ -11,7 +11,7 @@
     <td><span class="table-header">Spread</span></td>
   </tr>
   <tr *ngFor="let stack of stacks">
-    <td><a routerLink="/expert/{{stack.expert_id}}">{{stack.expert_name}}</a> ({{stack.affiliate}})</td>
+    <td><a routerLink="/expert/{{stack.expert_id}}">{{formattedName(stack)}}</a> ({{stack.affiliate}})</td>
     <td><a href="{{stack.link}}">{{stack.predicted_winner_name}}</a></td>
     <td>{{stack.money_line}}</td>
   </tr>

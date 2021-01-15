@@ -26,6 +26,16 @@ export class GameComponent implements OnInit {
     return this.game_data.home_score < this.game_data.away_score;
   }
 
+  formattedName(stack: Stack) {
+    var words = stack.expert_name.split(" ")
+    var result = ""
+    for (var i = 0; i < words.length; i++) {
+      if (result != "") result += " "
+      result += words[i][0].toUpperCase() + words[i].substr(1);
+    }
+    return result;
+  }
+
   async ngOnInit() {
     var url = new URL('https://stacksbystacks.com/Sql.php');
     url.searchParams.append('columns', 'expert_name,expert_id,affiliate,link,predicted_winner_name,predicted_winner_id,money_line');
