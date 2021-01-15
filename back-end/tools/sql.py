@@ -95,12 +95,6 @@ class RemoteSqlConn(SqlConnection):
         self._retry_mysql_with_reopen(execute_instructions)
 
 
-@functools.lru_cache(1)
-def table_cache() -> Dict[str, pd.DataFrame]:
-    """Hacky singleton"""
-    return dict()
-
-
 def _sql_print(txt: str) -> None:
     """Used to print sql statements to screen."""
     if len(txt) > MAX_OUTPUT:
@@ -224,11 +218,6 @@ def batch_add_rows_to_table(
             if c not in valid_columns:
                 raise Exception(f"Column {c} is not valid.")
 
-    # Update cache
-    if table_name in table_cache():
-        table_cache()[table_name] = pd.concat(
-            [table_cache()[table_name], values_df], ignore_index=True)
-
     # Start building the SQL instruction
     cols = values_df.columns
     column_clause = ", ".join(cols)
@@ -295,14 +284,13 @@ def sql_exists(query: str, conn: Optional[SqlConnection] = None) -> bool:
 
 
 def pull_everything_from_table(
-        table_name: str, read_from_cache: bool = True,
+        table_name: str,
         conn: Optional[SqlConnection] = None
 ) -> pd.DataFrame:
     """Same as query_df, but with table_name argument and caching.
 
     Args:
         table_name: The table to read
-        read_from_cache: If true read from local variable
         conn: If set use for read/execute.  Otherwise use default.
 
     Returns:
@@ -311,13 +299,8 @@ def pull_everything_from_table(
     if conn is None:
         conn = SqlConn()
 
-    if read_from_cache:
-        if table_name in table_cache():
-            return table_cache()[table_name]
-
     result = query_df(f"select * from {table_name};", conn=conn)
 
-    table_cache()[table_name] = result
     return result
 
 
@@ -331,7 +314,6 @@ def _get_id(
         cw_table: str,
         text_column: str,
         id_column: str,
-        cache: bool,
         conn: Optional[SqlConnection] = None,
 ) -> Optional[int]:
     """Given a string that represents a team, find the ID.
@@ -343,7 +325,6 @@ def _get_id(
         cw_table: Name of cross-walk table to use.
         text_column: Name of the column with the lookupable values.
         id_column: Name of the column with the IDs.
-        cache: If to read from the cached version of TEAM_CW_TABLE.
         conn: If set use for read/execute.  Otherwise use default.
 
     Returns:
@@ -352,7 +333,7 @@ def _get_id(
     if conn is None:
         conn = SqlConn()
 
-    cw = pull_everything_from_table(cw_table, read_from_cache=cache, conn=conn)
+    cw = pull_everything_from_table(cw_table, conn=conn)
     filtered = cw[cw[text_column] == lookup_value]
     if filtered.empty:
         return None
@@ -368,8 +349,7 @@ def _lookup_id(
 ) -> Optional[int]:
     """Given a string, lookup the ID.
 
-    Searches the passed table name.  If missed from local cache, look up on
-    remote table.
+    Searches the passed table name.
 
     Args:
         lookup_value: The value that we want to find the ID for.
@@ -385,13 +365,7 @@ def _lookup_id(
         conn = SqlConn()
 
     # Pull from remote on miss
-    result = _get_id(lookup_value, cw_table, text_column, id_column, cache=True,
-                     conn=conn)
-    if not result:
-        result = _get_id(
-            lookup_value, cw_table, text_column, id_column, cache=False,
-            conn=conn
-        )
+    result = _get_id(lookup_value, cw_table, text_column, id_column, conn=conn)
 
     return result
 
@@ -414,8 +388,7 @@ def _get_or_prompt_id(
 ) -> int:
     """Given a string, lookup the ID.
 
-    Searches the passed table name.  If missed from local cache, look up on
-    remote table, then potentially prompt on miss.
+    Searches the passed table name.  If missed, potentially prompt on miss.
 
     Args:
         lookup_value: The value that we want to find the ID for.

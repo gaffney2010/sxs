@@ -28,8 +28,10 @@ class TestConn(sql.SqlConnection):
     def sql_execute(self, command: str, safe_mode: bool = False) -> None:
         self.executions.append(command)
 
-        self._engine.cursor().execute(command)
+        cur = self._engine.cursor()
+        cur.execute(command)
         self._engine.commit()
+        cur.close()
 
 
 class BatchAddRowsToTableTest(unittest.TestCase):
@@ -288,8 +290,7 @@ class GetTeamIdTest(unittest.TestCase):
     def test_missing_id_without_prompt_fails(self):
         with self.assertRaisesRegex(ValueError,
                                     "Unknown text representing team: wizards."):
-            self.assertEqual(sql.get_team_id("wizards", prompt_on_miss=False,
-                                             conn=self.conn), 2)
+            sql.get_team_id("wizards", prompt_on_miss=False, conn=self.conn)
 
     @patch("time.time")
     @patch("tools.sql.stack_input")
@@ -305,10 +306,15 @@ class GetTeamIdTest(unittest.TestCase):
             "Unknown text representing team: wizards.  Enter team ID or 0 to fail or 4 for new ID:")
 
         pd.testing.assert_frame_equal(
-            sql.pull_everything_from_table(sql.TEAM_CW_TABLE), pd.DataFrame(
+            sql.pull_everything_from_table(sql.TEAM_CW_TABLE, conn=self.conn),
+            pd.DataFrame(
                 {sql.TEAM_TEXT_COLUMN: ["lions", "tigers", "bears", "wizards"],
                  sql.TEAM_ID_COLUMN: [1, 2, 3, 1],
                  "ts": [0, 0, 0, 0]}))
+
+        # Clean up
+        self.conn.sql_execute(
+            f"delete from {sql.TEAM_CW_TABLE} where {sql.TEAM_TEXT_COLUMN} = 'wizards';")
 
     @patch("time.time")
     @patch("tools.sql.stack_input")
@@ -325,31 +331,42 @@ class GetTeamIdTest(unittest.TestCase):
             "Unknown text representing team: wizards.  Enter team ID or 0 to fail or 4 for new ID:")
 
         pd.testing.assert_frame_equal(
-            sql.pull_everything_from_table(sql.TEAM_CW_TABLE), pd.DataFrame(
+            sql.pull_everything_from_table(sql.TEAM_CW_TABLE, conn=self.conn),
+            pd.DataFrame(
                 {sql.TEAM_TEXT_COLUMN: ["lions", "tigers", "bears", "wizards"],
                  sql.TEAM_ID_COLUMN: [1, 2, 3, 3],
                  "ts": [0, 0, 0, 0]}))
 
+        # Clean up
+        self.conn.sql_execute(
+            f"delete from {sql.TEAM_CW_TABLE} where {sql.TEAM_TEXT_COLUMN} = 'wizards';")
+
     @patch("time.time")
     @patch("tools.sql.stack_input")
     def test_add_new_team(self, mock_input, mock_time):
-        """We do a special test because of an error."""
         mock_input.side_effect = [4, "W"]
         mock_time.return_value = 0
 
         sql.get_team_id("Wizards", prompt_on_miss=True, conn=self.conn,
-                                 test_mode=True)
+                        test_mode=True)
 
         pd.testing.assert_frame_equal(
-            sql.pull_everything_from_table(sql.TEAM_CW_TABLE), pd.DataFrame(
+            sql.pull_everything_from_table(sql.TEAM_CW_TABLE, conn=self.conn),
+            pd.DataFrame(
                 {sql.TEAM_TEXT_COLUMN: ["lions", "tigers", "bears", "wizards"],
                  sql.TEAM_ID_COLUMN: [1, 2, 3, 4],
                  "ts": [0, 0, 0, 0]}))
 
         pd.testing.assert_frame_equal(
-            sql.pull_everything_from_table(sql.TEAM_ID_TABLE), pd.DataFrame(
+            sql.pull_everything_from_table(sql.TEAM_ID_TABLE, conn=self.conn),
+            pd.DataFrame(
                 {sql.TEAM_ID_COLUMN: [1, 2, 3, 4],
                  "short_name": ["L", "T", "B", "W"]}))
 
+        # Clean up
+        self.conn.sql_execute(
+            f"delete from {sql.TEAM_CW_TABLE} where {sql.TEAM_TEXT_COLUMN} = 'wizards';")
+        self.conn.sql_execute(
+            f"delete from {sql.TEAM_ID_TABLE} where short_name = 'W';")
 
 # I don't test get_expert_id, because it's similar enough.
