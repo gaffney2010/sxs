@@ -77,8 +77,6 @@ def read_url_to_string(url: str, web_driver: WebDriver,
         url: The URL to read.
         web_driver: A web driver.
         cacher: A strategy for caching.
-        error_logger: A function that takes strings and outputs to a log or
-            screen.
 
     Returns:
          The body of the resulting HTML in a flat string.

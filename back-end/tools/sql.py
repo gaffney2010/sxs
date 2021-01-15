@@ -4,9 +4,9 @@ import sqlite3
 import time
 from typing import Any, Callable, Dict, List, Optional, Tuple
 
+import MySQLdb
 import pandas as pd
 import unidecode
-import MySQLdb
 
 from configs import *
 from shared_types import *
@@ -168,9 +168,12 @@ class SqlConn(SqlConnection):
         self._sqlite_conn.commit()
 
 
-def _get_columns_for_table(table: str) -> List[str]:
-    SqlConn().sql_query(f"select * from {table} limit 1")
-    return SqlConn().columns
+def _get_columns_for_table(table: str, conn: Optional[SqlConnection] = None) -> List[str]:
+    if conn is None:
+        conn = SqlConn()
+
+    conn.sql_query(f"select * from {table} limit 1")
+    return conn.columns
 
 
 def _convert_field_to_sql(value: Any) -> str:
@@ -179,14 +182,15 @@ def _convert_field_to_sql(value: Any) -> str:
     if value is None:
         return "NULL"
     if isinstance(value, str):
-        return f'"{unidecode.unidecode(value)}"'
+        return f"'{unidecode.unidecode(value)}'"
     return str(value)
 
 
 def batch_add_rows_to_table(
         table_name: str, values_df: pd.DataFrame,
         safe_mode: bool = False,
-        conn: SqlConnection = None
+        conn: Optional[SqlConnection] = None,
+        replace: bool = True
 ) -> None:
     """Add the given values to the table.
 
@@ -202,6 +206,7 @@ def batch_add_rows_to_table(
             non-safe_mode and will fail in safe_mode.
         safe_mode: If true, don't actually make any changes to the table.
         conn: If set use for reads.  Otherwise use default.
+        replace: If false, fails on replacements by key.  Used for tests.
     """
     if conn is None:
         conn = SqlConn()
@@ -214,7 +219,7 @@ def batch_add_rows_to_table(
 
     # Check the columns' validity.
     if safe_mode:
-        valid_columns = _get_columns_for_table(table_name)
+        valid_columns = _get_columns_for_table(table_name, conn=conn)
         for c in values_df.columns:
             if c not in valid_columns:
                 raise Exception(f"Column {c} is not valid.")
@@ -236,23 +241,23 @@ def batch_add_rows_to_table(
     value_clause = ", ".join(values_strings)
 
     # Execute SQL instruction
+    insertion_method = "replace" if replace else "insert"
     conn.sql_execute(
-        f"replace into {table_name} ({column_clause}) values {value_clause};",
+        f"{insertion_method} into {table_name} ({column_clause}) values {value_clause};",
         safe_mode=safe_mode,
     )
 
 
 def add_row_to_table(
         table_name: str, values: Dict[str, Any], safe_mode: bool = False,
-        conn: SqlConnection = None
+        conn: Optional[SqlConnection] = None, replace: bool = True
 ) -> None:
     """Same as batch_add_rows_to_table, with single row."""
     batch_add_rows_to_table(table_name, pd.DataFrame(values, [0]),
-                            safe_mode=safe_mode,
-                            conn=conn)
+                            safe_mode=safe_mode, conn=conn, replace=replace)
 
 
-def query_df(query: str, conn: SqlConnection = None) -> pd.DataFrame:
+def query_df(query: str, conn: Optional[SqlConnection] = None) -> pd.DataFrame:
     """Runs the query, and returns in a dataframe format.
 
     Args:
@@ -279,7 +284,7 @@ def query_df(query: str, conn: SqlConnection = None) -> pd.DataFrame:
         return pd.DataFrame(data)
 
 
-def sql_exists(query: str, conn: SqlConnection = None) -> bool:
+def sql_exists(query: str, conn: Optional[SqlConnection] = None) -> bool:
     """Returns true if the query returns anything."""
     if conn is None:
         conn = SqlConn()
@@ -290,7 +295,8 @@ def sql_exists(query: str, conn: SqlConnection = None) -> bool:
 
 
 def pull_everything_from_table(
-        table_name: str, read_from_cache: bool = True, conn: SqlConnection = None
+        table_name: str, read_from_cache: bool = True,
+        conn: Optional[SqlConnection] = None
 ) -> pd.DataFrame:
     """Same as query_df, but with table_name argument and caching.
 

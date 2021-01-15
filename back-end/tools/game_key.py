@@ -2,6 +2,7 @@
 
 from shared_types import *
 from tools import sql
+from typing import Optional
 
 
 class HeaderException(Exception):
@@ -31,7 +32,7 @@ def game_key(date: int, x: TeamId, y: TeamId, n: int = 1) -> str:
 
 
 def get_unique_game_key(date: Date, x: TeamId, y: TeamId,
-                        conn: sql.SqlConnection = None) -> GameKey:
+                        conn: Optional[sql.SqlConnection] = None) -> GameKey:
     """Returns the GameKey iff there's only one game for the day.'"""
     if conn is None:
         conn = sql.SqlConn()
