@@ -9,7 +9,6 @@ import pandas as pd
 import unidecode
 
 from configs import *
-from shared_types import *
 
 LOCAL_DB = f"{LOCAL_DB_PATH}/{DB_VERSION}.db"
 
@@ -168,7 +167,8 @@ class SqlConn(SqlConnection):
         self._sqlite_conn.commit()
 
 
-def _get_columns_for_table(table: str, conn: Optional[SqlConnection] = None) -> List[str]:
+def _get_columns_for_table(table: str, conn: Optional[SqlConnection] = None) -> \
+        List[str]:
     if conn is None:
         conn = SqlConn()
 
@@ -205,7 +205,7 @@ def batch_add_rows_to_table(
         values_df: A dataframe with values.  Will ignore any invalid keys in
             non-safe_mode and will fail in safe_mode.
         safe_mode: If true, don't actually make any changes to the table.
-        conn: If set use for reads.  Otherwise use default.
+        conn: If set use for read/execute.  Otherwise use default.
         replace: If false, fails on replacements by key.  Used for tests.
     """
     if conn is None:
@@ -262,7 +262,7 @@ def query_df(query: str, conn: Optional[SqlConnection] = None) -> pd.DataFrame:
 
     Args:
         query: Sql query to run for results.
-        conn: If set use for reads.  Otherwise use default.
+        conn: If set use for read/execute.  Otherwise use default.
 
     Returns:
         A dataframe with the data.
@@ -303,11 +303,14 @@ def pull_everything_from_table(
     Args:
         table_name: The table to read
         read_from_cache: If true read from local variable
-        conn: If set use for reads.  Otherwise use default.
+        conn: If set use for read/execute.  Otherwise use default.
 
     Returns:
         A dataframe with the data.
     """
+    if conn is None:
+        conn = SqlConn()
+
     if read_from_cache:
         if table_name in table_cache():
             return table_cache()[table_name]
@@ -329,6 +332,7 @@ def _get_id(
         text_column: str,
         id_column: str,
         cache: bool,
+        conn: Optional[SqlConnection] = None,
 ) -> Optional[int]:
     """Given a string that represents a team, find the ID.
 
@@ -340,11 +344,15 @@ def _get_id(
         text_column: Name of the column with the lookupable values.
         id_column: Name of the column with the IDs.
         cache: If to read from the cached version of TEAM_CW_TABLE.
+        conn: If set use for read/execute.  Otherwise use default.
 
     Returns:
         Our internal ID or None if key is not found.
     """
-    cw = pull_everything_from_table(cw_table, read_from_cache=cache)
+    if conn is None:
+        conn = SqlConn()
+
+    cw = pull_everything_from_table(cw_table, read_from_cache=cache, conn=conn)
     filtered = cw[cw[text_column] == lookup_value]
     if filtered.empty:
         return None
@@ -356,6 +364,7 @@ def _lookup_id(
         cw_table: str,
         text_column: str,
         id_column: str,
+        conn: Optional[SqlConnection] = None,
 ) -> Optional[int]:
     """Given a string, lookup the ID.
 
@@ -366,19 +375,30 @@ def _lookup_id(
         lookup_value: The value that we want to find the ID for.
         cw_table: Name of cross-walk table to use.
         text_column: Name of the column with the lookupable values.
-        id_column: Name of the column with the IDs..
+        id_column: Name of the column with the IDs.
+        conn: If set use for read/execute.  Otherwise use default.
 
     Returns:
         Our internal ID or None if it doesn't exist.
     """
+    if conn is None:
+        conn = SqlConn()
+
     # Pull from remote on miss
-    result = _get_id(lookup_value, cw_table, text_column, id_column, cache=True)
+    result = _get_id(lookup_value, cw_table, text_column, id_column, cache=True,
+                     conn=conn)
     if not result:
         result = _get_id(
-            lookup_value, cw_table, text_column, id_column, cache=False
+            lookup_value, cw_table, text_column, id_column, cache=False,
+            conn=conn
         )
 
     return result
+
+
+def stack_input(prompt: str) -> Any:
+    # A pass-through to input, for testing.
+    return input(prompt)
 
 
 def _get_or_prompt_id(
@@ -389,6 +409,8 @@ def _get_or_prompt_id(
         id_column: str,
         id_type: str,
         prompt_on_miss: bool = True,
+        conn: Optional[SqlConnection] = None,
+        test_mode: bool = False
 ) -> int:
     """Given a string, lookup the ID.
 
@@ -405,6 +427,8 @@ def _get_or_prompt_id(
         id_type: What we're pulling, for use in error messages.
         prompt_on_miss: Ask the user to enter the team ID.  If they do, then
             will update the TEAM_CW table.
+        conn: If set use for read/execute.  Otherwise use default.
+        test_mode: If set, don't overwrite values.  PostGreSQL has problems.
 
     Returns:
         Our internal ID.
@@ -412,22 +436,27 @@ def _get_or_prompt_id(
     Raises:
         ValueError: If the text is not known or prompt is not a team ID
     """
+    if conn is None:
+        conn = SqlConn()
+
     lookup_value = _clean_text(lookup_value)
 
     # If we can find it, then just return.
-    result = _lookup_id(lookup_value, cw_table, text_column, id_column)
+    result = _lookup_id(lookup_value, cw_table, text_column, id_column,
+                        conn=conn)
     if result:
         return result
 
     if prompt_on_miss:
         new_cw_row = {text_column: lookup_value}  # For CW
-        new_id_row = {text_column: lookup_value}  # For id_table
+        new_id_row = {}  # For id_table
         id_table_needs_update = False
-        known_ids = pull_everything_from_table(id_table)[id_column]
+        known_ids = list(
+            pull_everything_from_table(id_table, conn=conn)[id_column])
 
         # Get ID from user
         max_known_id = 0 if len(known_ids) == 0 else max(known_ids)
-        id = input(
+        id = stack_input(
             "Unknown text representing {}: {}.  Enter {} ID or 0 to fail or {} for new ID:".format(
                 id_type, lookup_value, id_type, max_known_id + 1
             )
@@ -445,22 +474,24 @@ def _get_or_prompt_id(
             for column in _get_columns_for_table(id_table):
                 if column in (id_column, text_column):
                     continue
-                value = input(f"Enter value for {column}:")
+                value = stack_input(f"Enter value for {column}:")
                 new_id_row[column] = value
 
         # Keep all writes at the end, so that a fail above will not write any.
-        add_row_to_table(cw_table, new_cw_row)
+        add_row_to_table(cw_table, new_cw_row, conn=conn, replace=not test_mode)
         if id_table_needs_update:
-            add_row_to_table(id_table, new_id_row)
+            add_row_to_table(id_table, new_id_row, conn=conn,
+                             replace=not test_mode)
         logging.info(f"Saving {id_type} {lookup_value} with ID {id}.")
 
-        # TODO(#25): Return the entire row from the ID table.
         return id
 
     raise ValueError(f"Unknown text representing team: {lookup_value}.")
 
 
-def get_team_id(team_text: str, prompt_on_miss: bool = True) -> int:
+def get_team_id(team_text: str, prompt_on_miss: bool = True,
+                conn: Optional[SqlConnection] = None,
+                test_mode: bool = False) -> int:
     """Given a string that represents a team, find the ID."""
     return _get_or_prompt_id(
         lookup_value=team_text,
@@ -470,10 +501,14 @@ def get_team_id(team_text: str, prompt_on_miss: bool = True) -> int:
         id_column=TEAM_ID_COLUMN,
         id_type="team",
         prompt_on_miss=prompt_on_miss,
+        conn=conn,
+        test_mode=test_mode,
     )
 
 
-def get_expert_id(expert_text: str, prompt_on_miss: bool = True) -> int:
+def get_expert_id(expert_text: str, prompt_on_miss: bool = True,
+                  conn: Optional[SqlConnection] = None,
+                  test_mode: bool = False) -> int:
     """Given a string that represents a team, find the ID."""
     return _get_or_prompt_id(
         lookup_value=expert_text,
@@ -483,15 +518,18 @@ def get_expert_id(expert_text: str, prompt_on_miss: bool = True) -> int:
         id_column=EXPERT_ID_COLUMN,
         id_type="expert",
         prompt_on_miss=prompt_on_miss,
+        conn=conn,
+        test_mode=test_mode,
     )
 
 
-def force_get_expert_id(expert_text: str) -> int:
+def force_get_expert_id(expert_text: str,
+                        conn: Optional[SqlConnection] = None) -> int:
     """Find Expert ID or create a new row expert_text, and HUMAN."""
     expert_text = _clean_text(expert_text)
 
     result = _lookup_id(expert_text, EXPERT_CW_TABLE, EXPERT_TEXT_COLUMN,
-                        EXPERT_ID_COLUMN)
+                        EXPERT_ID_COLUMN, conn=conn)
     if result:
         return result
 
@@ -499,20 +537,9 @@ def force_get_expert_id(expert_text: str) -> int:
     new_id = max(known_ids) + 1
 
     add_row_to_table(EXPERT_CW_TABLE, {EXPERT_TEXT_COLUMN: expert_text,
-                                       EXPERT_ID_COLUMN: new_id})
+                                       EXPERT_ID_COLUMN: new_id}, conn=conn)
     add_row_to_table(EXPERT_ID_TABLE,
                      {EXPERT_ID_COLUMN: new_id, "expert_type": "HUMAN",
-                      EXPERT_TEXT_COLUMN: expert_text})
+                      EXPERT_TEXT_COLUMN: expert_text}, conn=conn)
 
     return new_id
-
-
-def get_date_from_week_hometeam(period: Period, hometeam: int) -> int:
-    results = SqlConn().sql_query(
-        "select game_date from game where home_team_id={} and season={} and week={}".format(
-            hometeam, period.year, period.week
-        )
-    )
-    assert len(results) == 1
-    assert len(results[0]) == 1
-    return results[0][0]

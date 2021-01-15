@@ -1,5 +1,6 @@
 import unittest
 from typing import List, Tuple
+from unittest.mock import patch
 
 import pandas as pd
 import psycopg2
@@ -207,13 +208,13 @@ class SqlExistsTest(unittest.TestCase):
 
     def test_does_exist(self):
         self.assertTrue(sql.sql_exists("select * from XYZ where a=1;",
-                        conn=self.conn))
+                                       conn=self.conn))
         self.assertTrue(sql.sql_exists("select * from XYZ where a=2;",
-                        conn=self.conn))
+                                       conn=self.conn))
 
     def test_does_not_exist(self):
         self.assertFalse(sql.sql_exists("select * from XYZ where a=3;",
-                        conn=self.conn))
+                                        conn=self.conn))
 
 
 class PullEverythingTest(unittest.TestCase):
@@ -242,3 +243,113 @@ class PullEverythingTest(unittest.TestCase):
         fetched_table = sql.pull_everything_from_table("XYZ", conn=self.conn)
 
         pd.testing.assert_frame_equal(fetched_table, values_df)
+
+
+class GetTeamIdTest(unittest.TestCase):
+
+    def setUp(self):
+        self.postgresql = testing.postgresql.Postgresql()
+        conn = psycopg2.connect(**self.postgresql.dsn())
+        self.conn = TestConn(conn)
+
+        self.conn.sql_execute(f"""
+            create table {sql.TEAM_CW_TABLE} (
+                {sql.TEAM_TEXT_COLUMN} varchar(255),
+                {sql.TEAM_ID_COLUMN} int,
+                ts int
+            );
+        """)
+        self.conn.sql_execute(f"""
+            insert into {sql.TEAM_CW_TABLE} values
+            ('lions', 1, 0), ('tigers', 2, 0), ('bears', 3, 0);
+        """)  # Oh my
+        self.conn.sql_execute(f"""
+            create table {sql.TEAM_ID_TABLE} (
+                {sql.TEAM_ID_COLUMN} int,
+                short_name varchar(255)
+            );
+        """)
+        self.conn.sql_execute(f"""
+            insert into {sql.TEAM_ID_TABLE} values
+            (1, 'L'), (2, 'T'), (3, 'B');
+        """)  # Oh my
+
+    def tearDown(self):
+        self.postgresql.stop()
+
+    def test_get_team_id_finds_id(self):
+        self.assertEqual(
+            sql.get_team_id("tigers", prompt_on_miss=False, conn=self.conn), 2)
+
+    def test_get_team_id_ignores_case(self):
+        self.assertEqual(
+            sql.get_team_id("TiGeRs", prompt_on_miss=False, conn=self.conn), 2)
+
+    def test_missing_id_without_prompt_fails(self):
+        with self.assertRaisesRegex(ValueError,
+                                    "Unknown text representing team: wizards."):
+            self.assertEqual(sql.get_team_id("wizards", prompt_on_miss=False,
+                                             conn=self.conn), 2)
+
+    @patch("time.time")
+    @patch("tools.sql.stack_input")
+    def test_missing_id_with_prompt(self, mock_input, mock_time):
+        mock_input.return_value = 1
+        mock_time.return_value = 0
+
+        result = sql.get_team_id("Wizards", prompt_on_miss=True, conn=self.conn,
+                                 test_mode=True)
+
+        self.assertEqual(result, 1)
+        mock_input.assert_called_once_with(
+            "Unknown text representing team: wizards.  Enter team ID or 0 to fail or 4 for new ID:")
+
+        pd.testing.assert_frame_equal(
+            sql.pull_everything_from_table(sql.TEAM_CW_TABLE), pd.DataFrame(
+                {sql.TEAM_TEXT_COLUMN: ["lions", "tigers", "bears", "wizards"],
+                 sql.TEAM_ID_COLUMN: [1, 2, 3, 1],
+                 "ts": [0, 0, 0, 0]}))
+
+    @patch("time.time")
+    @patch("tools.sql.stack_input")
+    def test_missing_id_with_prompt_n_minus_one(self, mock_input, mock_time):
+        """We do a special test because of an error."""
+        mock_input.return_value = 3
+        mock_time.return_value = 0
+
+        result = sql.get_team_id("Wizards", prompt_on_miss=True, conn=self.conn,
+                                 test_mode=True)
+
+        self.assertEqual(result, 3)
+        mock_input.assert_called_once_with(
+            "Unknown text representing team: wizards.  Enter team ID or 0 to fail or 4 for new ID:")
+
+        pd.testing.assert_frame_equal(
+            sql.pull_everything_from_table(sql.TEAM_CW_TABLE), pd.DataFrame(
+                {sql.TEAM_TEXT_COLUMN: ["lions", "tigers", "bears", "wizards"],
+                 sql.TEAM_ID_COLUMN: [1, 2, 3, 3],
+                 "ts": [0, 0, 0, 0]}))
+
+    @patch("time.time")
+    @patch("tools.sql.stack_input")
+    def test_add_new_team(self, mock_input, mock_time):
+        """We do a special test because of an error."""
+        mock_input.side_effect = [4, "W"]
+        mock_time.return_value = 0
+
+        sql.get_team_id("Wizards", prompt_on_miss=True, conn=self.conn,
+                                 test_mode=True)
+
+        pd.testing.assert_frame_equal(
+            sql.pull_everything_from_table(sql.TEAM_CW_TABLE), pd.DataFrame(
+                {sql.TEAM_TEXT_COLUMN: ["lions", "tigers", "bears", "wizards"],
+                 sql.TEAM_ID_COLUMN: [1, 2, 3, 4],
+                 "ts": [0, 0, 0, 0]}))
+
+        pd.testing.assert_frame_equal(
+            sql.pull_everything_from_table(sql.TEAM_ID_TABLE), pd.DataFrame(
+                {sql.TEAM_ID_COLUMN: [1, 2, 3, 4],
+                 "short_name": ["L", "T", "B", "W"]}))
+
+
+# I don't test get_expert_id, because it's similar enough.
