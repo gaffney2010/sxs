@@ -7,5 +7,5 @@ import materialize_table
 import translate_data
 
 
-materialize_table.mat()
 translate_data.soft_translate()
+materialize_table.mat()
