@@ -66,4 +66,4 @@ def pull_nhl(start: Date, end: Date, safe_mode: bool = SAFE_MODE) -> None:
                 parse_df(df, start, end, unique_games, safe_mode)
 
 
-# pull_nhl(20210101, 20210928)
+# pull_nhl(20210113, 20210117)

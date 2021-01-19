@@ -176,7 +176,8 @@ def _convert_field_to_sql(value: Any) -> str:
     if value is None:
         return "NULL"
     if isinstance(value, str):
-        return f"'{unidecode.unidecode(value)}'"
+        value = value.replace("'", "")  # SQL doesn't know what to do
+        value = f"'{unidecode.unidecode(value)}'"
     return str(value)
 
 

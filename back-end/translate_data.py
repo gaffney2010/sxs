@@ -11,6 +11,14 @@ import logging
 from tools import sql
 
 
+def _replace_nonish(x, replace_with=0):
+    if x is None:
+        return replace_with
+    if x != x:
+        return replace_with
+    return x
+
+
 def soft_translate():
     for table in sql.TIMED_TABLES:
         curr = sql.query_df(
@@ -19,9 +27,9 @@ def soft_translate():
         if curr.shape[0] == 0:
             last_ts = 0
         else:
-            last_ts = curr["ts"][0] or 0
+            last_ts = _replace_nonish(curr["ts"][0])
         for _, row in sql.pull_everything_from_table(table).iterrows():
-            row_ts = row["ts"] or 0
+            row_ts = _replace_nonish(row["ts"])
             if row_ts >= last_ts:
                 sql.add_row_to_table(table, row.to_dict(), conn=sql.RemoteSqlConn())
 
