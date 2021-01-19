@@ -2,9 +2,11 @@
   font-size: 18px;
   text-decoration: underline;
   text-decoration-color: #F59300;
+  color: #000000;
 }
 .table-header {
   font-weight: bold;
+  text-decoration: underline;
 }
 td {
   padding-top: 3px;

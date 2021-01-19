@@ -1,14 +1,14 @@
-<p class="game-header"><span [ngStyle]="{ 'font-weight' : (isHomeWon) ? 'bold' : 'normal' }">{{game_data.away_team_name}}</span>&nbsp;&nbsp;
+<p style="color: 'dimgray'; font-weight: 'bold'">{{game_data.game_date}} &nbsp;&nbsp;&nbsp;&nbsp;
+<span class="game-header"><span [ngStyle]="{ 'font-weight' : (isHomeWon) ? 'bold' : 'normal' }">{{game_data.away_team_name}}</span>&nbsp;&nbsp;
 <span ng-show="scoresExist">{{game_data.away_score}}&nbsp;&nbsp;</span>
 <b>@</b>&nbsp;&nbsp;
 <span ng-show="scoresExist">{{game_data.home_score}}&nbsp;&nbsp;</span>
-<span [ngStyle]="{ 'font-weight' : (isAwayWon) ? 'bold' : 'normal'  }">{{game_data.home_team_name}}</span></p>
-<p style="color: 'dimgray'; font-weight: 'bold'">{{game_data.game_date}}</p>
+<span [ngStyle]="{ 'font-weight' : (isAwayWon) ? 'bold' : 'normal'  }">{{game_data.home_team_name}}</span></span>
 <table>
   <tr>
-    <td><span class="table-header">Expert</span></td>
-    <td><span class="table-header">Pick</span></td>
-    <td><span class="table-header">Spread</span></td>
+    <td width="400px"><span class="table-header">Expert</span></td>
+    <td width="200px"><span class="table-header">Pick</span></td>
+    <td width="200px"><span class="table-header">Spread</span></td>
   </tr>
   <tr *ngFor="let stack of stacks">
     <td><a routerLink="/expert/{{stack.expert_id}}">{{formattedName(stack)}}</a> ({{stack.affiliate}})</td>
