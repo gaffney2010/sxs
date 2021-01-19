@@ -14,7 +14,7 @@ export class StacksComponent implements OnInit {
     var url = new URL('https://stacksbystacks.com/Sql.php');
     url.searchParams.append('columns', 'game_key,game_date,home_score,away_score,home_team_name,away_team_name,play_status');
     url.searchParams.append('table', 'games_with_team_names');
-    url.searchParams.append('order', 'game_date desc');
+    url.searchParams.append('order', 'game_key desc');
     url.searchParams.append('limit', '10');
     var offs = this.page * 10;
     url.searchParams.append('offset', offs.toString());
