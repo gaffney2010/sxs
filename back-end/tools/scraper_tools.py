@@ -115,3 +115,21 @@ def one_day_read(url: Url) -> str:
         page_text = read_url_to_string(url, driver, cacher=raw_html_cacher)
     logging.info("Finished pulling URL.")
     return page_text
+
+
+def zero_day_read(url: Url) -> str:
+    """Reads with a TimedReadWriteCacher with 1 day.
+
+    This is the default option.  Handles opening and closing the driver.
+
+    Args:
+        url: The URL to read.
+
+    Returns:
+         The body of the resulting HTML in a flat string.
+    """
+    logging.info(f"Reading URL: {url}")
+    with WebDriver() as driver:
+        page_text = read_url_to_string(url, driver, cacher=None)
+    logging.info("Finished pulling URL.")
+    return page_text

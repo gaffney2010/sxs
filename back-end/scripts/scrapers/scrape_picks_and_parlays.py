@@ -99,13 +99,15 @@ def pull_page(url: Url, safe_mode: bool = SAFE_MODE) -> PullStatus:
 def pull_links_from_page(url: Url, start: Date, end: Date,
                          safe_mode: bool = SAFE_MODE) -> bool:
     """Read everything from the page, and return if there's more."""
-    page_text = scraper_tools.one_day_read(url)
+    page_text = scraper_tools.zero_day_read(url)
     soup = bs4.BeautifulSoup(page_text, features="html5lib")
     for div in soup.findAll("div", {"class": "article-content"}):
         date_str = scraper_tools.strip_white_space(
             div.find("div", {"class": "article-meta"}).text)
         date = date_lib.full_parse_date(date_str)
+        logging.info(f"DATE === {date_str}")
         if date >= end:
+            logging.info(f"{date_str} out of bounds")
             continue
         if date < start:
             return False

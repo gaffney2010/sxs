@@ -10,6 +10,7 @@ from tools import sql
 
 
 def mat():
+    sql.RemoteSqlConn().sql_execute("truncate table swsws_table;")
     sql.batch_add_rows_to_table(
         "swsws_table",
         sql.pull_everything_from_table(

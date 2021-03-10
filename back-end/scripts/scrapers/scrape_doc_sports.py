@@ -87,7 +87,7 @@ def pull_page(url: Url, safe_mode: bool = SAFE_MODE) -> None:
 def pull_links_from_page(url: Url, start: Date, end: Date,
                          safe_mode: bool = SAFE_MODE) -> bool:
     """Read everything from the page, and return if there's more."""
-    page_text = scraper_tools.one_day_read(url)
+    page_text = scraper_tools.zero_day_read(url)
     soup = bs4.BeautifulSoup(page_text, features="html5lib")
     for div in soup.findAll("div", {"class": "views-row views-row-flex"}):
         try:

@@ -21,7 +21,7 @@ from tools import date_lib, game_key, scraper_tools, sql
 
 
 def pull_page(url: Url, date: Date, safe_mode: bool = SAFE_MODE) -> None:
-    page_text = scraper_tools.one_day_read(url)
+    page_text = scraper_tools.zero_day_read(url)
     soup = bs4.BeautifulSoup(page_text, features="html5lib")
     for row in soup.findAll("div", {"class": "picks-tr"}):
         if str(row).find("span") == -1:
