@@ -16,4 +16,4 @@ from scripts.scrapers import pull_nhl
 from tools import date_lib
 
 
-pull_nhl.pull_nhl(date_lib.today(), date_lib.today_plus(LOOK_AHEAD), safe_mode=SAFE_MODE)
+pull_nhl.pull_nhl(date_lib.today_plus(LOOK_BACK), date_lib.today_plus(LOOK_AHEAD), safe_mode=SAFE_MODE)

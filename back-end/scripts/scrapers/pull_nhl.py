@@ -31,6 +31,7 @@ def parse_df(df: pd.DataFrame, start: Date, end: Date,
              unique_games: Set[GameKey], safe_mode: bool) -> None:
     for _, row in df.iterrows():
         date = date_lib.full_parse_date(row["Date"])
+        print(date)
         if date < start or date > end:
             continue
 
@@ -63,7 +64,8 @@ def pull_nhl(start: Date, end: Date, safe_mode: bool = SAFE_MODE) -> None:
             table_html = f"<table>{table}</table>"
             unique_games = set()  # For double-headers
             for df in pd.read_html(table_html, flavor="bs4"):
+                print(df)
                 parse_df(df, start, end, unique_games, safe_mode)
 
 
-# pull_nhl(20210113, 20210117)
+# pull_nhl(20210114, 20210315)

@@ -71,7 +71,7 @@ def pull_page(url: Url, safe_mode: bool = SAFE_MODE) -> None:
 
     new_stack = {
         "expert_id": expert_id,
-        "affiliate": "PicksAndParlays",
+        "affiliate": "DocSports",
         "game_key": gk,
         "predicted_winner_id": predicted_winner_id,
         "money_line": ml,
