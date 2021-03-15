@@ -1,92 +1,125 @@
+import logging
 import os
 import pickle
 import time
-from typing import Any, Optional
+from typing import Any, Optional, Union
+
+import filelock
+
+from configs import *
+
+RAW_HTML_DIR = f"{SXS}/back-end/data/raw_html"
+EXPIRATION_PAD = "expiration.pickle"
+EXPIRATION_PAD_LOCK = "expiration.pickle.lock"
+
+TOMBSTONE_LEN = 7 * 24  # 7 days
+
+# An infinite token
+class InfTtl(object):
+    pass
 
 
-def _transform_key(key: str, directory: str) -> str:
+# Time-to-live object
+TtlHours = Union[int, InfTtl]
+# Seconds from epoch
+Seconds = int
+
+
+def _transform_key(key: str) -> str:
     """Make it safe to save"""
-    return os.path.join(directory, key.replace("/", ""))
+    return os.path.join(RAW_HTML_DIR, key.replace("/", ""))
 
 
-def _write_key_value(key: str, value: Any) -> None:
-    """Write value to key."""
-    with open(key, "wb") as f:
-        return pickle.dump(value, f)
+def _expiration_from_ttl(ttl: TtlHours) -> Seconds:
+    if isinstance(ttl, InfTtl):
+        return 253402214400  # Dec 31, 9999
+    return int(time.time()) + (ttl * 60 * 60)
 
 
-def _read_key(key: str) -> Any:
-    """Reads a file.  Will raise if file doesn't exist."""
-    with open(key, "rb") as f:
-        return pickle.load(f)
-
-
-class Cacher(object):
+class BaseCacher(object):
     """A strategy for how to read and write locally."""
 
     def try_to_read(self, key: str) -> Optional[Any]:
         """Returns flat text if found, otherwise None."""
-        return None
+        raise NotImplementedError
 
     def write(self, key: str, value: Any) -> None:
         """Write value by key locally."""
+        raise NotImplementedError
+
+
+class Cacher(BaseCacher):
+    """Empty cache, doesn't save or load."""
+
+    def try_to_read(self, key: str) -> Optional[Any]:
         return None
 
-
-class WriteCacher(Cacher):
-    """Only writes to relative directory, but always write."""
-
-    def __init__(self, directory: str):
-        self.directory = directory
-        super().__init__()
-
     def write(self, key: str, value: Any) -> None:
-        _write_key_value(_transform_key(key, self.directory), value)
+        pass
 
 
-class ReadWriteCacher(Cacher):
-    """Tries to read locally.  If failed, will write computed value."""
+class TimedReadWriteCacher(BaseCacher):
+    """Implements a write-aside with a TTL for expiration."""
 
-    def __init__(self, directory: str):
-        self.directory = directory
-        self.should_write = set()
-        super().__init__()
+    def __init__(self, directory: str = RAW_HTML_DIR, ttl: TtlHours = InfTtl):
+        self.ttl = ttl
 
-    def _read_impl(self, key: str) -> Optional[str]:
-        try:
-            return _read_key(_transform_key(key, self.directory))
-        except:
-            return None
-
-    def try_to_read(self, key: str) -> Optional[str]:
-        """Try to read and record cache misses."""
-        result = self._read_impl(key)
-        if result is None:
-            self.should_write.add(key)
-        return result
-
-    def write(self, key: str, value: Any) -> None:
-        """If the key has been cache missed, then write."""
-        if key in self.should_write:
-            _write_key_value(_transform_key(key, self.directory), value)
-            self.should_write.remove(key)
-
-
-class TimedReadWriteCacher(ReadWriteCacher):
-    """Tries to read locally, if not too old.  Will write new reads."""
-
-    def __init__(self, directory: str, age_days: int):
-        self.age_days = age_days
-        super().__init__(directory)
-
-    def _read_impl(self, key: str) -> Optional[str]:
-        """Only try to read locally if the file is newer than age_days old."""
-        tkey = _transform_key(key, self.directory)
+    def try_to_read(self, key: str) -> Optional[Any]:
+        """Always try to read locally."""
+        tkey = _transform_key(key)
         if os.path.exists(tkey):
-            mod_time = os.path.getmtime(tkey)
-            current_time = time.time()
-            if current_time - mod_time < self.age_days * 60 * 60 * 24:
-                return _read_key(tkey)
+            with open(tkey, "rb") as f:
+                return pickle.load(f)
+
+    def write(self, key: str, value: Any) -> None:
+        """Write if file doesn't already exist, and set ttl."""
+        tkey = _transform_key(key)
+        if not os.path.exists(tkey):
+            with open(tkey, "wb") as f:
+                pickle.dump(value, f)
+            with filelock.FileLock(
+                os.path.join(RAW_HTML_DIR, EXPIRATION_PAD_LOCK)
+            ):
+                pad_path = os.path.join(RAW_HTML_DIR, EXPIRATION_PAD)
+                pad = dict()
+                if os.path.exists(pad_path):
+                    with open(pad_path, "rb") as f:
+                        pad = pickle.load(f)
+                pad[tkey] = _expiration_from_ttl(self.ttl)
+                with open(pad_path, "wb") as f:
+                    pickle.dump(pad, pad_path)
+
+
+def cache_reaper() -> None:
+    pad_lock = os.path.join(RAW_HTML_DIR, EXPIRATION_PAD_LOCK)
+    pad_path = os.path.join(RAW_HTML_DIR, EXPIRATION_PAD)
+
+    with filelock.FileLock(pad_lock):
+        pad = dict()
+        if os.path.exists(pad_path):
+            with open(pad_path, "rb") as f:
+                pad = pickle.load(f)
+
+        files_encountered = set()
+        for fn in os.listdir(RAW_HTML_DIR):
+            logging.debug(fn)
+            files_encountered.add(fn)
+            if fn in pad:
+                if pad[fn] < time.time():
+                    # Expired.
+                    os.remove(os.path.join(RAW_HTML_DIR, fn))
+            else:
+                # Something happened, add a tombstone.
+                pad[fn] = _expiration_from_ttl(TOMBSTONE_LEN)
+
+        # If for some reason, the pad has entries for files that don't exist,
+        #  then erase these.
+        pad = {fn: pad[fn] for fn in files_encountered}
+        logging.debug(pad)
+
+        with open(pad_path, "wb") as f:
+            pickle.dump(pad, f)
+
 
 
 def memoize(key: str, cacher: Cacher):

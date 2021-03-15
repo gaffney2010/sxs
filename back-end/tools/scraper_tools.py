@@ -8,11 +8,10 @@ import retrying
 import selenium.webdriver
 
 from configs import *
-from tools.cache import Cacher, memoize, TimedReadWriteCacher
 from shared_types import *
+from tools.cache import Cacher, memoize, TimedReadWriteCacher
 
 DRIVER_DELAY_SEC = 3
-RAW_HTML_DIR = f"{SXS}/back-end/data/raw_html"
 
 
 def strip_white_space(x: str) -> str:
@@ -109,8 +108,7 @@ def one_day_read(url: Url) -> str:
          The body of the resulting HTML in a flat string.
     """
     logging.info(f"Reading URL: {url}")
-    raw_html_cacher = TimedReadWriteCacher(directory=RAW_HTML_DIR,
-                                           age_days=1)
+    raw_html_cacher = TimedReadWriteCacher(ttl=23)
     with WebDriver() as driver:
         page_text = read_url_to_string(url, driver, cacher=raw_html_cacher)
     logging.info("Finished pulling URL.")

@@ -2,6 +2,7 @@ attrs
 black
 bs4
 dateparser
+filelock
 html5lib # For pd.read_html
 mysqlclient # brew install mysql??
 numpy
