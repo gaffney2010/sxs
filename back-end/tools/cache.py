@@ -87,7 +87,7 @@ class TimedReadWriteCacher(BaseCacher):
                         pad = pickle.load(f)
                 pad[tkey] = _expiration_from_ttl(self.ttl)
                 with open(pad_path, "wb") as f:
-                    pickle.dump(pad, pad_path)
+                    pickle.dump(pad, f)
 
 
 def cache_reaper() -> None:
