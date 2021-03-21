@@ -4,7 +4,6 @@
 ################################################################################
 # Logging logic, must come first
 SAFE_MODE = False
-
 from tools.logger import configure_logging
 
 configure_logging(SAFE_MODE)
@@ -19,6 +18,9 @@ import praw
 from configs import *
 from shared_types import *
 from tools import date_lib, game_key, sql
+from typing import Optional
+
+LIMIT = 100
 
 COMMENT_1 = """???
 # 2 NHL PICKS BY STATS PROFESSOR
@@ -173,11 +175,42 @@ TEAMS = (
     "sharks",
     "canucks",
     "knights",
+    "anaheim",
+    "arizona",
+    "boston",
+    "buffalo",
+    "calgary",
+    "carolina",
+    "chicago",
+    "colorado",
+    "columbus",
+    "dallas",
+    "detroit",
+    "edmonton",
+    "florida",
+    "los angeles",
+    "minnesota",
+    "montreal",
+    "nashville",
+    "new jersey",
+    "ottowa",
+    "philadelphia",
+    "san jose",
+    "seattle",
+    "st louis",
+    "tampa bay",
+    "toronto",
+    "vancouver",
+    "vegas",
+    "washington",
+    "winnipeg",
 )
 
 
 def parse_comment(comment: str, date: Date, url: Url,
                   safe_mode: bool = SAFE_MODE) -> None:
+    logging.debug("COMMENT :::::")
+    logging.debug(comment)
     lines = comment.split("\n")
     for line in lines:
         logging.debug("Trying line.")
@@ -185,6 +218,8 @@ def parse_comment(comment: str, date: Date, url: Url,
 
         # Special case, if STARS in all caps.
         line = line.replace("STARS", "")
+        # Special case, if "." appears in st. louis"
+        line = line.replace("t. ", "t ")
 
         line = line.lower()
 
@@ -228,7 +263,7 @@ def parse_comment(comment: str, date: Date, url: Url,
             logging.debug("Bad order")
             continue
 
-        match = re.search(r"[+-]\d\d\d ", line)
+        match = re.search(r"[+-]\d\d\d", line)
         if not match:
             logging.debug("Couldn't find ml.")
             continue
@@ -253,15 +288,20 @@ def parse_comment(comment: str, date: Date, url: Url,
         sql.add_row_to_table("Stack", stack, safe_mode=safe_mode)
 
 
-def pull_all_comments(start: Date, end: Date, safe_mode: bool = SAFE_MODE) -> None:
+def pull_all_comments(start: Date, end: Date, safe_mode: bool = SAFE_MODE,
+                      limit: Optional[int] = LIMIT) -> None:
     reddit = praw.Reddit(**PRAW_CONFIG)
-    comments = reddit.redditor("David-MJ").comments.new(limit=None)
+    comments = reddit.redditor("David-MJ").comments.new(limit=limit)
 
     for comment in comments:
+        logging.debug(
+            f"PARSING COMMENT WITH TITLE::::: {comment.submission.title}")
         if comment.submission.title.find("NHL Daily Discussion") != -1:
             date = date_lib.full_parse_date(
                 comment.submission.title.split(" - ")[1])
             url = comment.permalink
+            logging.debug("==================")
+            logging.debug(url)
             if start <= date < end:
                 try:
                     parse_comment(comment.body, date, url, safe_mode=safe_mode)
@@ -271,4 +311,4 @@ def pull_all_comments(start: Date, end: Date, safe_mode: bool = SAFE_MODE) -> No
                     logging.error(traceback.format_exc())
 
 
-# pull_all_comments(0, 99999999)
+pull_all_comments(0, 99999999, limit=None)
