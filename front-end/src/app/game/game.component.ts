@@ -9,6 +9,7 @@ import { Game, Stack } from '../shared_interfaces';
 export class GameComponent implements OnInit {
   @Input() game_data: Game;
   stacks: Array<Stack>;
+  consensus: string;
 
   constructor() { }
 
@@ -38,7 +39,7 @@ export class GameComponent implements OnInit {
 
   async ngOnInit() {
     var url = new URL('https://stacksbystacks.com/Sql.php');
-    url.searchParams.append('columns', 'expert_name,expert_id,affiliate,link,predicted_winner_name,predicted_winner_id,money_line');
+    url.searchParams.append('columns', 'expert_name,expert_id,affiliate,link,predicted_winner_name,predicted_winner_id,money_line,consensus');
     url.searchParams.append('table', 'swsws_table');
     // Must do key/value over where because string.
     url.searchParams.append('key', "game_key");
@@ -46,6 +47,7 @@ export class GameComponent implements OnInit {
     url.searchParams.append('order', 'score desc');
   	let response = await fetch(url.href);
   	this.stacks = await response.json();
+  	this.consensus = this.stacks[0].consensus;
   }
 
 }

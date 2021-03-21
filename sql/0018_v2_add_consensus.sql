@@ -24,7 +24,7 @@ from		(
 						rec.score,
 						rec.at_date,
 						row_number() over (partition by expert_id, game_key order by at_date desc) rn,
-						con.consensus_id
+						con_name.short_name as consensus
 			from		stack x
 			inner join 	expert exp
 					on 	x.expert_id = exp.expert_id
@@ -37,5 +37,7 @@ from		(
 					and	rec.at_date < g.game_date
 			left join	consensus con
 					on	x.game_key = con.game_key
+			left join	team con_name
+					on	con.consensus_id = con_name.team_id
 			) t
 where		rn = 1;

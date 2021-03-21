@@ -38,4 +38,5 @@ export interface Stack {
   predicted_winner_id_with_spread: bigint;
   spread_favorite: bigint;
   spread_amt: number;
+  consensus: string;
 }
