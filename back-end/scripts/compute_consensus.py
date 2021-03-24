@@ -1,9 +1,9 @@
 ################################################################################
 # Logging logic, must come first
-# SAFE_MODE = False
-# from tools.logger import configure_logging
-#
-# configure_logging(SAFE_MODE)
+SAFE_MODE = False
+from tools.logger import configure_logging
+
+configure_logging(SAFE_MODE)
 ################################################################################
 
 from collections import defaultdict

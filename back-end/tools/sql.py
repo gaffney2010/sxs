@@ -1,4 +1,3 @@
-import functools
 import logging
 import sqlite3
 import time
@@ -37,10 +36,11 @@ NO_RETRY = 3
 
 
 class SqlConnection(object):
-    def sql_query(self, query: str) -> List[Tuple]:
+    def sql_query(self, query: str, silent_mode: bool = False) -> List[Tuple]:
         raise NotImplementedError
 
-    def sql_execute(self, command: str, safe_mode: bool = False) -> None:
+    def sql_execute(self, command: str, safe_mode: bool = False,
+                    silent_mode: bool = False) -> None:
         raise NotImplementedError
 
 
@@ -71,8 +71,9 @@ class RemoteSqlConn(SqlConnection):
 
         raise (recent_exception)
 
-    def sql_query(self, query: str) -> List[Tuple]:
-        logging.info(f"Query: {query}")
+    def sql_query(self, query: str, silent_mode: bool = False) -> List[Tuple]:
+        if not silent_mode:
+            logging.info(f"Query: {query}")
 
         cur = self._mysql_conn.cursor()
         cur.execute(query)
@@ -81,8 +82,10 @@ class RemoteSqlConn(SqlConnection):
             self.columns = [d[0] for d in cur.description]
         return cur.fetchall()
 
-    def sql_execute(self, command: str, safe_mode: bool = False) -> None:
-        logging.info(f"Execute: {command}")
+    def sql_execute(self, command: str, safe_mode: bool = False,
+                    silent_mode: bool = False) -> None:
+        if not silent_mode:
+            logging.info(f"Execute: {command}")
 
         if safe_mode:
             # In this case, print only.
@@ -116,7 +119,7 @@ class SqlConn(SqlConnection):
 
         return cls._instance
 
-    def sql_query(self, query: str) -> List[Tuple]:
+    def sql_query(self, query: str, silent_mode: bool = False) -> List[Tuple]:
         """Low-level SQL query.
 
         Reads from local (sqlite) database only.
@@ -126,12 +129,14 @@ class SqlConn(SqlConnection):
 
         Args:
             query: The query to do the read.
+            silent_mode: If true, print nothing.
 
         Returns:
             A list of tuples, which represent the fields in order.  Can use
                 helper functions to join this with the column names.
         """
-        _sql_print(f"Query: {query}")
+        if not silent_mode:
+            _sql_print(f"Query: {query}")
 
         cur = self._sqlite_conn.cursor()
         cur.execute(query)
@@ -140,7 +145,8 @@ class SqlConn(SqlConnection):
             self.columns = [d[0] for d in cur.description]
         return cur.fetchall()
 
-    def sql_execute(self, command: str, safe_mode: bool = False) -> None:
+    def sql_execute(self, command: str, safe_mode: bool = False,
+                    silent_mode: bool = False) -> None:
         """Low-level SQL execute.
 
         This will get run both locally (sqlite) and remotely (mysql).
@@ -150,8 +156,10 @@ class SqlConn(SqlConnection):
         Args:
             command: The statement to execute
             safe_mode: If true, don't actually make any changes to the table.
+            silent_mode: If true, don't print anything.
         """
-        _sql_print(f"Execute: {command}")
+        if not silent_mode:
+            _sql_print(f"Execute: {command}")
 
         if safe_mode:
             # In this case, print only.
@@ -185,7 +193,8 @@ def batch_add_rows_to_table(
         table_name: str, values_df: pd.DataFrame,
         safe_mode: bool = False,
         conn: Optional[SqlConnection] = None,
-        replace: bool = True
+        replace: bool = True,
+        silent_mode: bool = False,
 ) -> None:
     """Add the given values to the table.
 
@@ -202,6 +211,7 @@ def batch_add_rows_to_table(
         safe_mode: If true, don't actually make any changes to the table.
         conn: If set use for read/execute.  Otherwise use default.
         replace: If false, fails on replacements by key.  Used for tests.
+        silent_mode: Output nothing.
     """
     if conn is None:
         conn = SqlConn()
@@ -234,25 +244,29 @@ def batch_add_rows_to_table(
     insertion_method = "replace" if replace else "insert"
     conn.sql_execute(
         f"{insertion_method} into {table_name} ({column_clause}) values {value_clause};",
-        safe_mode=safe_mode,
+        safe_mode=safe_mode, silent_mode=silent_mode
     )
 
 
 def add_row_to_table(
         table_name: str, values: Dict[str, Any], safe_mode: bool = False,
-        conn: Optional[SqlConnection] = None, replace: bool = True
+        conn: Optional[SqlConnection] = None, replace: bool = True,
+        silent_mode: bool = False
 ) -> None:
     """Same as batch_add_rows_to_table, with single row."""
     batch_add_rows_to_table(table_name, pd.DataFrame(values, [0]),
-                            safe_mode=safe_mode, conn=conn, replace=replace)
+                            safe_mode=safe_mode, conn=conn, replace=replace,
+                            silent_mode=silent_mode)
 
 
-def query_df(query: str, conn: Optional[SqlConnection] = None) -> pd.DataFrame:
+def query_df(query: str, conn: Optional[SqlConnection] = None,
+             silent_mode: bool = False) -> pd.DataFrame:
     """Runs the query, and returns in a dataframe format.
 
     Args:
         query: Sql query to run for results.
         conn: If set use for read/execute.  Otherwise use default.
+        silent_mode: If true, don't print anything.
 
     Returns:
         A dataframe with the data.
@@ -262,7 +276,7 @@ def query_df(query: str, conn: Optional[SqlConnection] = None) -> pd.DataFrame:
 
     # Get data
     data = list()
-    for result in conn.sql_query(query):
+    for result in conn.sql_query(query, silent_mode=silent_mode):
         assert len(conn.columns) == len(result)
         data.append({k: v for k, v in zip(conn.columns, result)})
 

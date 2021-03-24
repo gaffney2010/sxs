@@ -5,7 +5,7 @@ Ex. https://www.cbssports.com/nhl/expert-picks/20200807/
 
 ################################################################################
 # Logging logic, must come first
-SAFE_MODE = False
+SAFE_MODE = True
 from tools.logger import configure_logging
 
 configure_logging(SAFE_MODE)
@@ -65,8 +65,10 @@ def pull_all_pages(start: Date, end: Date, safe_mode: bool = SAFE_MODE) -> None:
         f"select distinct game_date from game where game_date>={start} and game_date<{end}")
     for result in results:
         date = result[0]
+        logging.error("====================")
+        logging.error(date)
         pull_page(f"https://www.cbssports.com/nhl/expert-picks/{date}/", date,
                   safe_mode=safe_mode)
 
 # pull_page("https://www.cbssports.com/nhl/expert-picks/20200807/", 20200807)
-# pull_all_pages(20181003, 20190109)
+# pull_all_pages(20210322, 20210324)

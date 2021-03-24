@@ -17,4 +17,5 @@ def mat():
             "stacks_with_stacks_with_stacks", conn=sql.RemoteSqlConn()
         ),
         conn=sql.RemoteSqlConn(),
+        silent_mode=True,
     )
